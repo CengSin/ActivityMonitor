@@ -7,6 +7,7 @@ for ARCH in arm64 x86_64; do
   lipo "$APP/Contents/MacOS/ActivityMonitor" -verify_arch "$ARCH"
 done
 codesign --verify --deep --strict "$APP"
+[[ -s "$APP/Contents/Resources/Sparkle-LICENSE.txt" ]]
 SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
 [[ -L "$SPARKLE/Versions/Current" && -x "$SPARKLE/Autoupdate" && -d "$SPARKLE/Updater.app" ]]
 lipo "$SPARKLE/Sparkle" -verify_arch arm64 x86_64

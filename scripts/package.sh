@@ -42,6 +42,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Wiesław Šoltes</string>
 </dict></plist>
 PLIST
+cp .build/artifacts/sparkle/Sparkle/LICENSE "$APP/Contents/Resources/Sparkle-LICENSE.txt"
 swift scripts/icon.swift "$APP/Contents/Resources"
 else
  # Signing jobs consume the verified build artifact; no project compilation runs with credentials.
