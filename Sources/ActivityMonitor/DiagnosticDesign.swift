@@ -17,7 +17,7 @@ struct DiagnosticInfoButton: View {
     .help(text)
     .accessibilityLabel("About \(title)")
     .accessibilityHint(text)
-    .popover(isPresented: $expanded, arrowEdge: .top) {
+    .popover(isPresented: $expanded, arrowEdge: .bottom) {
       VStack(alignment: .leading, spacing: 8) {
         Text(title).font(.system(size: 13, weight: .semibold))
         Text(text).font(.system(size: 12)).textSelection(.enabled)
