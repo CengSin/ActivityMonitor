@@ -1,28 +1,20 @@
-Activity Monitor 1.8.1 adds per-process graphics memory accounting, more GPU activity details, and compact diagnostic help.
+Activity Monitor 1.9.0 adds native software updates and gives more window space to charts and processes.
 
-### New
+### Software updates
 
-- Track charged, charged compressed, excluded, and excluded compressed graphics memory for each accessible process using macOS task-memory ledgers.
-- Sort processes by **Graphics charged**, inspect subtree subtotals, and view graphics-memory histories with last readings and visible-range peaks.
-- Inspect per-GPU process execution rates, observed GPU time, measured/reporting client coverage, and execution-counter counts.
-- Export timestamped graphics-memory histories and per-device process activity in diagnostic JSON.
+- Use **Check for Updates…** from the application menu or More menu to download and install new versions with Sparkle's native interface.
+- Daily update checks are enabled by default. Opt into automatic downloads and installation, or disable background checks, from **Software Updates** in the application menu.
+- Update feeds and archives are signed with Ed25519. Downloads are verified before extraction, and release publishing verifies the archive against the public key included in the app.
 
-### Improved
+### More room for monitoring
 
-- Share immutable graphics-memory snapshots across process rows and histories to reduce copying during sorting and tree aggregation.
-
-- Process-tree construction uses compact temporary graph state, avoids copying full records into traversal queues, and skips redundant filtering of complete snapshots.
-
-- Diagnostic explanations and subtitles now use compact info buttons. Hover for a tooltip or click to keep the full explanation open; access errors and missing-data states remain visible.
-- GPU tracking preserves missing/reset/warmup states, deduplicates reporting clients, and rebaselines after long observation gaps.
-- Graphics accounting reuses the background task-memory query, checks returned API revisions, preserves measured zero, and keeps unavailable readings distinct.
-
-Graphics ledgers are kernel accounting, not a complete Metal allocation inventory or dedicated VRAM total. Shared surfaces can overlap, and compressed balances are logical bytes. No private frameworks, root access, or task-control rights are required.
+- A compact, single-row overview header retains the GPU selector, history range, live/paused status, and help. Hover over the info button for a tooltip or click it to read the explanation.
+- All six metric tabs now stay in the native macOS title bar. Narrow windows use icons; wider windows include labels and additional actions.
+- Metric tabs use a single native glass outline on macOS Tahoe, removing the redundant border.
+- Native window controls support normal window dragging, zooming, and full screen. Keyboard shortcuts and distinct accessibility labels remain available.
 
 ### Install
 
-Download the universal DMG or app ZIP for Apple silicon and Intel on macOS 14 or later. Drag Activity Monitor to Applications. SHA256SUMS verifies the downloads.
+Download the universal DMG or ZIP for Apple silicon and Intel on macOS 14 or later. Install 1.9.0 once from the download to enable built-in updates; earlier releases do not include the updater. SHA256SUMS verifies the downloads.
 
-[GPU memory API investigation](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.1/docs/diagnostics/GPU_MEMORY.md) · [Process diagnostics guide](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.1/docs/diagnostics/README.md)
-
-[Changes since 1.7.0](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.7.0...v1.8.1)
+[Changes since 1.8.1](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.8.1...v1.9.0)
