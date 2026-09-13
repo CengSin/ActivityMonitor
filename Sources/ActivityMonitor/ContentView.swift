@@ -237,20 +237,7 @@ struct ContentView: View {
       viewportHeight.map { AnyLayout(WorkspaceLayout(viewportHeight: $0)) }
       ?? AnyLayout(VStackLayout(spacing: 0))
     container {
-      if !layout.denseOverview {
-        sectionHeading.padding(.top, 23).padding(.bottom, 20)
-      } else {
-        HStack(spacing: 8) {
-          if metric == .gpu {
-            GPUDevicePicker(theme: theme)
-          } else {
-            Text(metric.rawValue + " activity")
-              .font(.system(size: 18, weight: .semibold)).tracking(-0.4)
-          }
-          Spacer(minLength: 4)
-          HistoryRangePicker(range: $range, theme: theme)
-        }.padding(.vertical, 6)
-      }
+      overviewControls(layout)
       MonitorOverview(
         metric: metric, range: range, theme: theme,
         width: layout.width - layout.gutter * 2, expanded: layout.expanded,
@@ -418,61 +405,32 @@ struct ContentView: View {
     ).accessibilityLabel("\(name) appearance")
       .accessibilityAddTraits(appearance == name ? .isSelected : [])
   }
-  var sectionHeading: some View {
-    HStack {
-      VStack(alignment: .leading, spacing: 6) {
-        Text(heading).font(.system(size: 27, weight: .semibold)).tracking(-0.85)
-        Text(subheading).font(.system(size: 13)).foregroundStyle(theme.secondary)
-      }
-      Spacer()
+  /// One control row leaves chart and process space unchanged across overview modes.
+  func overviewControls(_ layout: MonitorLayout) -> some View {
+    HStack(spacing: 8) {
       if metric == .gpu {
-        Menu {
-          if monitor.gpuDevices.isEmpty { Text("No GPU detected") }
-          ForEach(monitor.gpuDevices) { device in
-            Button {
-              monitor.selectedGPU = device.id
-            } label: {
-              if monitor.gpuDevice?.id == device.id {
-                Label(
-                  device.name + (device.connected ? "" : " · disconnected"),
-                  systemImage: "checkmark")
-              } else {
-                Text(device.name + (device.connected ? "" : " · disconnected"))
-              }
-            }
-          }
-        } label: {
-          HStack(spacing: 8) {
-            Image(systemName: "square.3.layers.3d")
-            Text(monitor.gpuDevice?.name ?? "No GPU detected").lineLimit(1)
-            Image(systemName: "chevron.down").font(.system(size: 8))
-          }.font(.system(size: 11)).foregroundStyle(theme.secondary).padding(.horizontal, 10).frame(
-            height: 28
-          )
-          .overlay(RoundedRectangle(cornerRadius: 6).stroke(theme.border, lineWidth: 1))
-        }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(
-          "Choose GPU for the overview; process counters include all reporting devices")
+        GPUDevicePicker(theme: theme)
+      } else {
+        Text(metric.rawValue + " activity")
+          .font(.system(size: 15, weight: .semibold)).tracking(-0.3).lineLimit(1)
       }
-      HStack(spacing: 6) {
-        Circle().fill(monitor.paused ? theme.secondary : theme.green).frame(width: 5, height: 5)
-        Text(monitor.paused ? "Monitoring paused" : "Live monitoring").font(
-          .system(size: 10, weight: .medium)
-        ).foregroundStyle(monitor.paused ? theme.secondary : theme.green)
-      }.padding(.horizontal, 10).frame(height: 28).background(
-        monitor.paused ? theme.recessed : theme.green.opacity(0.1),
-        in: RoundedRectangle(cornerRadius: 6)
-      ).padding(.trailing, 8)
-      HStack(spacing: 2) {
-        ForEach([1, 5, 15], id: \.self) { value in
-          Button {
-            range = value
-          } label: {
-            Text("\(value) min").font(.system(size: 10)).frame(width: 44, height: 24)
-          }.buttonStyle(MonitorSegmentButton(theme: theme, active: range == value, radius: 5))
-            .accessibilityAddTraits(range == value ? .isSelected : [])
+      DiagnosticInfoButton(title: heading, text: subheading, theme: theme)
+      Spacer(minLength: 0)
+      HStack(spacing: 5) {
+        Image(systemName: monitor.paused ? "pause.circle" : "circle.fill")
+          .font(.system(size: monitor.paused ? 11 : 6))
+        if !layout.compact {
+          Text(monitor.paused ? "Paused" : "Live")
+            .font(.system(size: 10, weight: .medium))
         }
-      }.padding(3).overlay(RoundedRectangle(cornerRadius: 8).stroke(theme.border, lineWidth: 1))
-    }
+      }
+      .foregroundStyle(monitor.paused ? theme.secondary : theme.green)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(monitor.paused ? "Monitoring paused" : "Live monitoring")
+      .help(monitor.paused ? "Monitoring paused" : "Live monitoring")
+      HistoryRangePicker(range: $range, theme: theme)
+        .fixedSize()
+    }.frame(height: 42)
   }
   var statusbar: some View {
     HStack(spacing: 10) {
