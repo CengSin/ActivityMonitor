@@ -12,7 +12,8 @@ import SwiftUI
       ContentView().environmentObject(monitor).environmentObject(navigation)
         .background(TrayLifecycle(services: services, enabled: showMenuBar))
     }.defaultSize(width: 1440, height: 900)
-      .windowStyle(.hiddenTitleBar)
+      .windowStyle(.titleBar)
+      .windowToolbarStyle(.unifiedCompact(showsTitle: false))
       .commands {
         CommandGroup(replacing: .newItem) {}
         ProcessViewCommands()

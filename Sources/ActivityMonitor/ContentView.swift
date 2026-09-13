@@ -87,7 +87,6 @@ struct ContentView: View {
     GeometryReader { geometry in
       let layout = MonitorLayout(width: geometry.size.width, height: geometry.size.height)
       VStack(spacing: 0) {
-        adaptiveTitlebar(layout)
         if layout.scrollsWorkspace {
           GeometryReader { viewport in
             ScrollView {
@@ -128,6 +127,9 @@ struct ContentView: View {
           }
         }
       }
+      .toolbar { monitorToolbar(layout) }
+      .toolbarBackground(theme.toolbar, for: .windowToolbar)
+      .toolbarBackground(.visible, for: .windowToolbar)
       .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: inspector)
       .sheet(isPresented: $showGallery) {
         DesignGallery(
@@ -140,7 +142,7 @@ struct ContentView: View {
         ).environmentObject(monitor)
       }
     }.background(theme.window).foregroundStyle(theme.text).font(.system(size: 12))
-      .frame(minWidth: 420, minHeight: 480).ignoresSafeArea(.container, edges: .top)
+      .frame(minWidth: 420, minHeight: 480)
       .onReceive(navigation.$request) { request in
         guard let request else { return }
         selectMetric(request.metric)
@@ -268,106 +270,50 @@ struct ContentView: View {
       sample: sample, files: inspectFiles, reveal: reveal, stop: { stopTargets = [$0] },
       diagnose: openDiagnostics)
   }
-  @ViewBuilder func adaptiveTitlebar(_ layout: MonitorLayout) -> some View {
-    if layout.width >= 1350 {
-      titlebar
-    } else {
-      VStack(spacing: 0) {
-        ZStack {
-          WindowChrome()
-          HStack(spacing: 12) {
-            TrafficLights()
-            Text("Activity Monitor").font(.system(size: 12, weight: .semibold))
-            Spacer(minLength: 0)
-            Button {
-              monitor.paused.toggle()
-            } label: {
-              Image(systemName: monitor.paused ? "play" : "pause")
-            }
-            .buttonStyle(MonitorIconButton(theme: theme)).help(monitor.paused ? "Resume" : "Pause")
-            SettingsMenuButton { settingsMenu(compact: true) }
-              .frame(width: 32, height: 32)
-          }.padding(.horizontal, layout.gutter)
-          if layout.standard {
-            MetricSwitcher(metric: Binding(get: { metric }, set: selectMetric), theme: theme)
-          }
-        }.frame(height: layout.standard ? 78 : 44)
-        if !layout.standard {
-          MetricSwitcher(
-            metric: Binding(get: { metric }, set: selectMetric), theme: theme,
-            compact: layout.compact
-          )
-          .padding(.horizontal, layout.gutter).padding(.bottom, 4)
-        }
-      }.background(theme.toolbar).overlay(alignment: .bottom) {
-        Rectangle().fill(theme.border).frame(height: 1)
+  @ToolbarContentBuilder
+  func monitorToolbar(_ layout: MonitorLayout) -> some ToolbarContent {
+    if layout.width >= 1100 {
+      ToolbarItem(placement: .navigation) {
+        BrandMark(size: 24)
+          .help("Activity Monitor · \(Self.machineName) · \(architectureLabel)")
+          .accessibilityLabel("Activity Monitor, \(Self.machineName), \(architectureLabel)")
       }
     }
-  }
-  var titlebar: some View {
-    ZStack {
-      WindowChrome()
-      HStack(spacing: 0) {
-        HStack(spacing: 14) {
-          TrafficLights()
-          HStack(spacing: 10) {
-            BrandMark()
-            VStack(alignment: .leading, spacing: 2) {
-              Text("Activity Monitor").font(.system(size: 13, weight: .semibold))
-              Text("\(Self.machineName) · \(architectureLabel)").font(
-                .system(size: 10)
-              ).foregroundStyle(theme.secondary)
-            }
-          }
+    ToolbarItem(placement: .principal) {
+      MetricSwitcher(
+        metric: Binding(get: { metric }, set: selectMetric), theme: theme,
+        compact: layout.width < 860, controlHeight: 28
+      )
+      .frame(width: layout.width < 860 ? 210 : nil)
+      .fixedSize(horizontal: true, vertical: true)
+    }
+    ToolbarItem(placement: .primaryAction) {
+      HStack(spacing: 4) {
+        Button { monitor.paused.toggle() } label: {
+          Image(systemName: monitor.paused ? "play" : "pause")
         }
-        Spacer(minLength: 12)
-        HStack(spacing: 3) {
-          ForEach(Metric.allCases) { item in
-            Button {
-              selectMetric(item)
-            } label: {
-              HStack(spacing: 7) {
-                Image(systemName: item.icon).font(.system(size: 13)).foregroundStyle(
-                  item == metric ? theme.blue : theme.secondary)
-                Text(item.rawValue).font(.system(size: 13, weight: .medium))
-              }.padding(.horizontal, 10).frame(height: 34)
-            }.buttonStyle(MonitorSegmentButton(theme: theme, active: item == metric))
-              .accessibilityAddTraits(item == metric ? .isSelected : []).help(
-                "\(item.rawValue) · ⌘\(Metric.allCases.firstIndex(of:item)!+1)")
-          }
-        }.padding(4).background(theme.recessed, in: RoundedRectangle(cornerRadius: 11)).overlay(
-          RoundedRectangle(cornerRadius: 11).stroke(theme.separator, lineWidth: 1))
-        Spacer(minLength: 12)
-        HStack(spacing: 5) {
-          Button {
-            monitor.paused.toggle()
-          } label: {
-            Image(systemName: monitor.paused ? "play" : "pause")
-          }.buttonStyle(MonitorIconButton(theme: theme)).help(monitor.paused ? "Resume" : "Pause")
+        .buttonStyle(MonitorIconButton(theme: theme))
+        .help(monitor.paused ? "Resume" : "Pause")
+        .accessibilityLabel(monitor.paused ? "Resume monitoring" : "Pause monitoring")
+        if layout.width >= 1350 {
           Button {
             monitor.export(
               visibleProcesses, includeHierarchy: processViewMode == .tree, usage: visibleUsage)
           } label: {
             Image(systemName: "square.and.arrow.up")
           }.buttonStyle(MonitorIconButton(theme: theme)).help("Export visible processes")
-          Button {
-            showGallery = true
-          } label: {
+          Button { showGallery = true } label: {
             Image(systemName: "square.grid.2x2")
           }.buttonStyle(MonitorIconButton(theme: theme)).help("All views & themes")
-          Rectangle().fill(theme.border).frame(width: 1, height: 20).padding(.horizontal, 6)
           HStack(spacing: 2) {
             appearanceButton("Light", "sun.max")
             appearanceButton("Dark", "moon")
             appearanceButton("System", "desktopcomputer")
-          }.padding(3).overlay(RoundedRectangle(cornerRadius: 9).stroke(theme.border, lineWidth: 1))
-          SettingsMenuButton { settingsMenu(compact: false) }
-            .frame(width: 32, height: 32)
+          }
         }
-      }.padding(.horizontal, 23)
-
-    }.frame(height: 78).background(theme.toolbar).overlay(alignment: .bottom) {
-      Rectangle().fill(theme.border).frame(height: 1)
+        SettingsMenuButton { settingsMenu(compact: layout.width < 1350) }
+          .frame(width: 32, height: 32)
+      }.fixedSize().accessibilityElement(children: .contain)
     }
   }
   private func settingsMenu(compact: Bool) -> NSMenu {

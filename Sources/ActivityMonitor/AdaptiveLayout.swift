@@ -146,6 +146,7 @@ struct MetricSwitcher: View {
   @Binding var metric: Metric
   let theme: MonitorTheme
   var compact = false
+  var controlHeight: CGFloat = 34
   var body: some View {
     HStack(spacing: 3) {
       ForEach(Metric.allCases) { item in
@@ -157,8 +158,9 @@ struct MetricSwitcher: View {
               .foregroundStyle(item == metric ? theme.blue : theme.secondary)
             if !compact { Text(item.rawValue).font(.system(size: 13, weight: .medium)) }
           }.frame(maxWidth: compact ? .infinity : nil).padding(.horizontal, compact ? 0 : 10)
-            .frame(height: 34)
+            .frame(height: controlHeight)
         }.buttonStyle(MonitorSegmentButton(theme: theme, active: item == metric))
+          .accessibilityIdentifier("monitor-metric-\(item.rawValue)")
           .accessibilityLabel(item.rawValue).accessibilityAddTraits(
             item == metric ? .isSelected : []
           )
@@ -166,6 +168,7 @@ struct MetricSwitcher: View {
       }
     }.padding(4).background(theme.recessed, in: RoundedRectangle(cornerRadius: 11))
       .overlay(RoundedRectangle(cornerRadius: 11).stroke(theme.separator, lineWidth: 1))
+      .accessibilityElement(children: .contain)
   }
 }
 struct HistoryRangePicker: View {
