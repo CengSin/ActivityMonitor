@@ -42,64 +42,79 @@ struct ProcessTreeSnapshot {
     rowsByID.reserveCapacity(sortedRows.count)
     parents.reserveCapacity(sortedRows.count)
     usageByID.reserveCapacity(sortedRows.count)
-    for row in sortedRows where rowsByID[row.id] == nil {
+    var indicesByID: [Int32: Int] = [:]
+    indicesByID.reserveCapacity(sortedRows.count)
+    for row in sortedRows where indicesByID[row.id] == nil {
+      indicesByID[row.id] = rows.count
       rowsByID[row.id] = row
       rows.append(row)
     }
     self.matchingIDs = (matchingIDs ?? Set(rowsByID.keys)).intersection(rowsByID.keys)
     self.filtered = filtered
-    for row in rows {
-      guard row.parent != row.id, let parent = rowsByID[row.parent],
-        parent.start == 0 || row.start == 0 || parent.start <= row.start
-      else { continue }
-      parents[row.id] = parent.id
+    // Use dense indices for temporary graph state and aggregation. Public PID
+    // dictionaries are materialized once, rather than mutated for every edge.
+    var parentIndices: [Int?] = rows.map { row in
+      guard row.parent != row.id, let parent = indicesByID[row.parent],
+        rows[parent].start == 0 || row.start == 0 || rows[parent].start <= row.start
+      else { return nil }
+      return parent
     }
 
     // Break each cycle at its smallest PID, independent of the selected sort.
     // Each edge is visited once, even for a very deep process chain.
-    var checked = Set<Int32>()
-    checked.reserveCapacity(rows.count)
-    var path: [Int32] = []
-    var positions: [Int32: Int] = [:]
-    positions.reserveCapacity(rows.count)
-    for row in rows where !checked.contains(row.id) {
+    var checked = Array(repeating: false, count: rows.count)
+    var positions = Array(repeating: -1, count: rows.count)
+    var path: [Int] = []
+    for index in rows.indices where !checked[index] {
       path.removeAll(keepingCapacity: true)
-      var cursor: Int32? = row.id
-      while let id = cursor, !checked.contains(id) {
-        if let cycle = positions[id] {
-          if let root = path[cycle...].min() { parents[root] = nil }
+      var cursor: Int? = index
+      while let current = cursor, !checked[current] {
+        let cycle = positions[current]
+        if cycle >= 0 {
+          if let root = path[cycle...].min(by: { rows[$0].id < rows[$1].id }) {
+            parentIndices[root] = nil
+          }
           break
         }
-        positions[id] = path.count
-        path.append(id)
-        cursor = parents[id]
+        positions[current] = path.count
+        path.append(current)
+        cursor = parentIndices[current]
       }
-      checked.formUnion(path)
+      for current in path { checked[current] = true }
     }
 
-    // Reduce leaves into their direct parent exactly once. The complete forest
-    // is accounted before either filtering or collapse hides any descendants.
-    var remainingChildren: [Int32: Int] = [:]
-    remainingChildren.reserveCapacity(rows.count)
-    for row in rows {
-      usageByID[row.id] = ProcessSubtreeUsage(row)
-      if let parent = parents[row.id] { remainingChildren[parent, default: 0] += 1 }
+    // Reduce leaves into their direct parent exactly once, before filtering or
+    // collapse hides descendants. No process counter loses integer precision.
+    var usage = rows.map(ProcessSubtreeUsage.init)
+    var remainingChildren = Array(repeating: 0, count: rows.count)
+    for index in rows.indices {
+      if let parent = parentIndices[index] {
+        parents[rows[index].id] = rows[parent].id
+        remainingChildren[parent] += 1
+      }
     }
-    var ready = rows.compactMap { remainingChildren[$0.id] == nil ? $0.id : nil }
-    while let id = ready.popLast() {
-      guard let parent = parents[id], let usage = usageByID[id] else { continue }
-      usageByID[parent]?.add(usage)
-      remainingChildren[parent, default: 0] -= 1
+    var ready = rows.indices.filter { remainingChildren[$0] == 0 }
+    while let index = ready.popLast() {
+      guard let parent = parentIndices[index] else { continue }
+      let child = usage[index]
+      usage[parent].add(child)
+      remainingChildren[parent] -= 1
       if remainingChildren[parent] == 0 { ready.append(parent) }
     }
+    for index in rows.indices { usageByID[rows[index].id] = usage[index] }
 
-    var included = Set<Int32>()
-    included.reserveCapacity(rows.count)
-    for id in self.matchingIDs where rowsByID[id] != nil {
-      var cursor: Int32? = id
-      while let next = cursor, included.insert(next).inserted { cursor = parents[next] }
+    var included = Array(repeating: false, count: rows.count)
+    var includedCount = 0
+    for id in self.matchingIDs {
+      var cursor = indicesByID[id]
+      while let current = cursor, !included[current] {
+        included[current] = true
+        includedCount += 1
+        cursor = parentIndices[current]
+      }
     }
-    let includedRows = included.count == rows.count ? rows : rows.filter { included.contains($0.id) }
+    let includedRows = includedCount == rows.count
+      ? rows : rows.indices.compactMap { included[$0] ? rows[$0] : nil }
     let orderedRows = ordering?.apply(includedRows, usage: usageByID) ?? includedRows
     entries.reserveCapacity(includedRows.count)
     // Keep traversal queues lightweight: copying a complete process row also
