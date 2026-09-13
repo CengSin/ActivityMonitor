@@ -77,6 +77,8 @@ struct ProcessMemorySample: Codable, Equatable, Identifiable {
   var sharedBytes: UInt64?
   var compressed: UInt64?
   var purgeable: UInt64?
+  // Region counters are sampled independently from lightweight monitor updates.
+  var detailed = false
 }
 /// macOS exposes GPU allocation totals per device, while public APIs do not expose
 /// an allocation total attributable to an individual process.
@@ -198,7 +200,7 @@ enum DiagnosticCollector {
         privateBytes: nil,
         sharedBytes: nil,
         compressed: details.vmAccessible != 0 ? details.compressed : nil,
-        purgeable: details.vmAccessible != 0 ? details.purgeable : nil)
+        purgeable: details.vmAccessible != 0 ? details.purgeable : nil, detailed: true)
       var usageInfo = rusage_info_v4()
       let usageStatus = withUnsafeMutablePointer(to: &usageInfo) { pointer in
         pointer.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) {

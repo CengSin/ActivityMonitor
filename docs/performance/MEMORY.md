@@ -16,7 +16,7 @@ the metric shown by Activity Monitor’s Memory column.
 | Activity Monitor, current release build, 13 seconds after launch | 203 MB | 141 MB | Main window, six-process search result |
 | Activity Monitor, current release build, all 574 processes | 216–224 MB | 144–148 MB | List/tree navigation warmed the process table |
 
-An earlier controlled run of the published 1.6.3 application measured approximately
+An earlier separate run of the published 1.6.3 application measured approximately
 228–241 MB after ten minutes, with a cold start around 180–186 MB. A fresh local build
 settled between 190 and 214 MB during the first two minutes. The exact value varies with
 window size, process population, display scale, graphics driver state and the current
@@ -32,21 +32,20 @@ The largest writable/compositor categories in the current all-process run were:
   allocator region.
 
 The built-in application had about 72 MB of small malloc allocations, 9 MB of
-CoreAnimation and less than 1 MB of IOSurface in the same observation. This identifies
-the SwiftUI/AppKit/Metal rendering floor as the main remaining difference. `vmmap` and
+CoreAnimation and less than 1 MB of IOSurface in the same observation. The categories suggest graphics backing is a major contributor to the difference; they do not establish an irreducible framework cost. `vmmap` and
 `leaks` did not show a process-owned leak large enough to explain the gap (`leaks`
 reported about 14 KB across 284 allocations). The graphics surfaces are managed by the
 system compositor and are not equivalent to a retained application data cache.
 
 ## Changes in this PR
 
-- Process icons now use one 128 × 128 Retina representation, an 8 MiB shared image cache,
+- Process icons now use one 128 × 128 Retina representation, a shared image cache with an advisory 8 MiB cost limit,
   and a 128-entry process-identity cache. Identity entries are removed when a process
   exits or a PID is reused, and least-recently-used entries are evicted when the bound is
   reached. This prevents a long-running monitor from retaining every short-lived helper.
 - Process diagnostic history remains bounded. Activity history keeps at most 3,601
   samples (15 minutes at the fastest supported cadence); memory and GPU memory histories
-  keep at most 901 samples and discard entries older than 15 minutes. Session ownership
+  keep at most 4,096 and 3,601 samples respectively and discard entries older than 15 minutes. Session ownership
   still releases the arrays when the last diagnostic surface closes.
 - Memory snapshots use native counters rather than retaining region objects: physical
   footprint from `proc_pid_rusage`, resident task bytes, compressed and purgeable bytes
@@ -57,8 +56,7 @@ system compositor and are not equivalent to a retained application data cache.
   labels that value unavailable instead of fabricating a process number.
 
 These changes reduce avoidable retained data while keeping process lists, sorting,
-diagnostics, exports, charts and permissions behavior intact. They cannot remove the
-framework and compositor memory needed to render the existing feature set.
+diagnostics, exports, charts and permissions behavior intact. Further rendering and allocation profiling is needed to determine how much of the remaining footprint can be reduced.
 
 ## Reproduce a comparison
 

@@ -23,12 +23,11 @@ Tables support column resizing, double-click fitting, drag reordering, sorting, 
 
 ## Memory visualizations
 
-The **Memory** page includes a fifteen-minute composition chart and a current/peak list
+The **Memory** page includes a fifteen-minute composition chart and a last-reading/peak list
 for physical footprint, resident pages, private and shared resident pages, compressed
 bytes and purgeable bytes. Footprint is the primary process-memory comparison and comes
 from `proc_pid_rusage`; the other series are native diagnostic counters that can overlap
-or be unavailable when macOS denies task or region inspection. The chart keeps missing
-series as gaps and the list labels unavailable values with `—`.
+or be unavailable when macOS denies task or region inspection. The chart splits lines at unavailable readings and gaps longer than ten seconds. Private/shared region reads refresh independently; lightweight updates do not erase the last region reading. Hover a reading for its capture time. A failed detailed read displays `—`, and peaks cover the selected range.
 
 The **GPU** page includes a fifteen-minute chart of driver-reported device memory in use
 and allocated, followed by one row per visible GPU. Device totals describe the graphics
@@ -86,7 +85,7 @@ Only the currently selected detailed table is collected. Each table retains its 
 
 macOS protects some processes and counters. This app does not request root privileges or task-control rights. Mach-port enumeration can be denied even when Apple’s tools can provide the total. Apple’s Energy Impact, App Nap, and some GPU counters have no generally available equivalent; unavailable values remain `—`. Raw energy-accounting values have unspecified units and are not presented as watts or an Energy Impact score. QoS and resource time counters explicitly identify Mach ticks; thread CPU times are nanoseconds, converted to duration without applying the Mach timebase again.
 
-Network counters are refreshed by the shared `nettop` collector approximately every five seconds. Charts show observed counter changes, which may appear as bursts. Histories begin when a process session opens and retain up to fifteen minutes, bounded to 3,601 samples. Detailed collections are bounded to 4,096 threads, 8,192 file descriptors/fileports, and 16,384 memory regions/Mach ports. A limit or partial read is labelled in the result.
+Network counters are refreshed by the shared `nettop` collector approximately every five seconds. Charts show observed counter changes, which may appear as bursts. Histories begin when a process session opens and retain up to fifteen minutes, bounded to 3,601 activity/GPU memory samples and 4,096 combined live/detailed memory samples. Detailed collections are bounded to 4,096 threads, 8,192 file descriptors/fileports, and 16,384 memory regions/Mach ports. A limit or partial read is labelled in the result.
 
 Reports run without a shell, have a fifteen-second deadline and a 4 MB output cap, and can be cancelled. The report reader continues enforcing the deadline even if the tool closes stdout early. Process exit or identity changes discard tool output. Environment values are collected only through the explicit **Environment** report and may contain sensitive data; they are not part of launch-argument collection or automatic snapshots. Exports include the report currently selected by the user.
 
@@ -94,7 +93,7 @@ Reports run without a shell, have a fifteen-second deadline and a 4 MB output ca
 
 `SystemBridge/ProcessDiagnostics.c` isolates the libproc and Mach bindings. `DiagnosticCollector` produces immutable, timestamped snapshots on utility workers. `ProcessDiagnosticSession` owns history and report state. `ProcessDiagnosticsCenter` shares sessions across reference-counted dialogs, tool windows and pins. Closing the last owner drops retained history and detail arrays; no per-process polling timer is created.
 
-The UI shares the existing exact Canvas chart renderer and native chart inspection/Audio Graph accessibility, with process-specific labels and domains. Diagnostic tables use one `NSTableView` inside one `NSScrollView`, so scrollbars remain at the visible viewport edges. SwiftUI owns the shell and the inspector navigation; AppKit owns tool-window and status-item lifetimes.
+Activity charts share the existing exact Canvas renderer and native chart inspection/Audio Graph accessibility. Memory counter charts use Swift Charts with separate missing-data segments and accessible numeric lists. Diagnostic tables use one `NSTableView` inside one `NSScrollView`, so scrollbars remain at the visible viewport edges. SwiftUI owns the shell and the inspector navigation; AppKit owns tool-window and status-item lifetimes.
 
 Run:
 

@@ -22,9 +22,9 @@ The process **Memory** diagnostics page records a bounded fifteen-minute history
 physical footprint, resident bytes, private/shared resident region bytes, compressed
 bytes and purgeable bytes. Footprint comes from `proc_pid_rusage`; task and region
 counters are independent and may be unavailable. Resident, private and shared values
-can overlap shared pages, so the chart and current/peak list are a diagnostic breakdown,
+can overlap shared pages, so the chart and last-reading/peak list are a diagnostic breakdown,
 not an additive decomposition of footprint. The JSON diagnostic export includes the
-history and retains missing values as `null`.
+history and omits unavailable optional counter keys.
 
 Disk totals are process-lifetime counters, not whole-device totals. Throughput excludes processes that exit between samples and processes whose counters cannot be read. Per-process network bytes use Apple's `nettop -P -L 1 -n -x -J bytes_in,bytes_out` output and refresh every five seconds. Processes without observed network accounting show —. These counters follow the connections available to nettop and may differ from interface totals. Network interface totals aggregate non-loopback interfaces since their creation; VPN/bridge traffic may be counted at multiple interfaces. Interface removal/reset can interrupt a rate interval. Histories remain in memory for fifteen minutes and begin at app launch; pausing stops collection.
 

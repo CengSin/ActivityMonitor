@@ -42,7 +42,7 @@ Keep an eye on performance, understand resource usage, and find the processes th
 
 ## A workspace for each process
 
-Right-click a process and choose **Process diagnostics…**. Follow its CPU, memory, energy, disk, network and GPU activity, then inspect individual threads, open files, listening ports and memory mappings. Memory and GPU pages include native composition charts and current/peak lists; device GPU memory is shown when the driver reports it, while public macOS APIs do not expose per-process GPU allocation bytes. Compare memory by protection, inspect virtual address ranges, and rank mapped images by resident or virtual size. Resize and reorder columns, filter entries, copy rows, and export the details you need.
+Right-click a process and choose **Process diagnostics…**. Follow its CPU, memory, energy, disk, network and GPU activity, then inspect individual threads, open files, listening ports and memory mappings. Memory and GPU pages include native counter charts and lists; memory shows the last reading and visible-range peak, and GPU lists device memory in use and allocated. Device GPU memory is shown when the driver reports it, while public macOS APIs do not expose per-process GPU allocation bytes. Compare memory by protection, inspect virtual address ranges, and rank mapped images by resident or virtual size. Resize and reorder columns, filter entries, copy rows, and export the details you need.
 
 Keep several process monitors open as independent tool windows, float one above your workspace, or pin a process to the menu bar with your preferred live metric. Collect stack samples, virtual-memory reports, launch arguments and code-signing details without leaving the process workspace.
 

@@ -238,17 +238,18 @@ enum DiagnosticCommand {
   var state: String {
     exited ? "Exited · Last snapshot" : paused ? "Paused" : sourcePaused ? "Monitor paused" : "Live"
   }
-  private func appendMemory(_ sample: ProcessMemorySample) {
+  func appendMemory(_ sample: ProcessMemorySample) {
     if let index = memoryHistory.firstIndex(where: { $0.date == sample.date }) {
       // A diagnostic refresh can fill in private/shared bytes for the process sample
       // already collected by the live monitor.
       var merged = memoryHistory[index]
       merged.footprint = sample.footprint ?? merged.footprint
       merged.resident = sample.resident ?? merged.resident
-      merged.privateBytes = sample.privateBytes ?? merged.privateBytes
-      merged.sharedBytes = sample.sharedBytes ?? merged.sharedBytes
+      merged.privateBytes = sample.detailed ? sample.privateBytes : sample.privateBytes ?? merged.privateBytes
+      merged.sharedBytes = sample.detailed ? sample.sharedBytes : sample.sharedBytes ?? merged.sharedBytes
       merged.compressed = sample.compressed ?? merged.compressed
       merged.purgeable = sample.purgeable ?? merged.purgeable
+      merged.detailed = sample.detailed || merged.detailed
       memoryHistory[index] = merged
       return
     }
@@ -258,9 +259,10 @@ enum DiagnosticCommand {
       let index = memoryHistory.firstIndex { $0.date > sample.date } ?? memoryHistory.endIndex
       memoryHistory.insert(sample, at: index)
     }
-    let cutoff = sample.date.addingTimeInterval(-900)
+    let cutoff = (memoryHistory.last?.date ?? sample.date).addingTimeInterval(-900)
     memoryHistory.removeAll { $0.date < cutoff }
-    if memoryHistory.count > 901 { memoryHistory.removeFirst(memoryHistory.count - 901) }
+    // 3,601 live points at 250 ms plus detailed reads and bounded manual refreshes.
+    if memoryHistory.count > 4096 { memoryHistory.removeFirst(memoryHistory.count - 4096) }
   }
   private func appendGPUMemory(_ sample: ProcessGPUMemorySample) {
     if let index = gpuMemoryHistory.firstIndex(where: { $0.date == sample.date }) {
@@ -271,9 +273,9 @@ enum DiagnosticCommand {
       let index = gpuMemoryHistory.firstIndex { $0.date > sample.date } ?? gpuMemoryHistory.endIndex
       gpuMemoryHistory.insert(sample, at: index)
     }
-    let cutoff = sample.date.addingTimeInterval(-900)
+    let cutoff = (gpuMemoryHistory.last?.date ?? sample.date).addingTimeInterval(-900)
     gpuMemoryHistory.removeAll { $0.date < cutoff }
-    if gpuMemoryHistory.count > 901 { gpuMemoryHistory.removeFirst(gpuMemoryHistory.count - 901) }
+    if gpuMemoryHistory.count > 3601 { gpuMemoryHistory.removeFirst(gpuMemoryHistory.count - 3601) }
   }
   func accept(rows: [ProcessRow], date: Date, gpuDevices: [GPUDeviceSample] = []) {
     guard !exited else { return }
@@ -308,7 +310,7 @@ enum DiagnosticCommand {
     appendMemory(
       .init(
         date: date,
-        footprint: current.accessible ? current.memory : nil,
+        footprint: current.accessible && current.memoryUsesResidentFallback != true ? current.memory : nil,
         resident: current.accessible ? current.resident : nil,
         privateBytes: current.details.privateMemory,
         sharedBytes: current.details.sharedMemory,

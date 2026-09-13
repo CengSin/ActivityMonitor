@@ -1,7 +1,7 @@
 import Charts
 import SwiftUI
 
-private enum ProcessMemoryMeasure: String, CaseIterable, Identifiable {
+enum ProcessMemoryMeasure: String, CaseIterable, Identifiable {
   case footprint
   case resident
   case privateBytes
@@ -26,7 +26,7 @@ private enum ProcessMemoryMeasure: String, CaseIterable, Identifiable {
     case .resident: return "Resident pages from task statistics"
     case .privateBytes: return "Private resident pages from the process map"
     case .sharedBytes: return "Shared resident pages from the process map"
-    case .compressed: return "Compressed resident bytes from task statistics"
+    case .compressed: return "Logical compressed bytes, including compressed pages swapped out"
     case .purgeable: return "Purgeable volatile resident bytes from task statistics"
     }
   }
@@ -38,6 +38,13 @@ private enum ProcessMemoryMeasure: String, CaseIterable, Identifiable {
     case .sharedBytes: return sample.sharedBytes
     case .compressed: return sample.compressed
     case .purgeable: return sample.purgeable
+    }
+  }
+  func readings(_ history: [ProcessMemorySample]) -> [ProcessMemorySample] {
+    switch self {
+    case .privateBytes, .sharedBytes:
+      return history.filter { $0.detailed || value($0) != nil }
+    default: return history
     }
   }
   func color(_ theme: MonitorTheme) -> Color {
@@ -52,12 +59,35 @@ private enum ProcessMemoryMeasure: String, CaseIterable, Identifiable {
   }
 }
 
-private struct ResourceChartPoint: Identifiable {
+struct ResourceChartPoint: Identifiable {
   let id: String
   let date: Date
   let value: Double
   let title: String
+  let segment: Int
+  var series: String { "\(title)-\(segment)" }
 }
+
+enum ResourceChartData {
+  static func points(_ readings: [(Date, UInt64?)], title: String) -> [ResourceChartPoint] {
+    var result: [ResourceChartPoint] = []
+    var segment = 0
+    var previous: Date?
+    for (date, value) in readings {
+      if let previous, date.timeIntervalSince(previous) > 10 { segment += 1 }
+      previous = date
+      guard let value else { segment += 1; continue }
+      result.append(.init(id: "\(title)-\(date.timeIntervalSinceReferenceDate)",
+                          date: date, value: Double(value), title: title, segment: segment))
+    }
+    return result
+  }
+  static func byteLabel(_ value: Double) -> String {
+    guard value.isFinite, value > 0 else { return bytes(0) }
+    return bytes(value >= Double(UInt64.max) ? UInt64.max : UInt64(value))
+  }
+}
+
 
 struct ProcessMemoryVisualization: View {
   let history: [ProcessMemorySample]
@@ -108,7 +138,7 @@ struct ProcessMemoryVisualization: View {
     return Chart(points) { point in
       LineMark(
         x: .value("Time", point.date), y: .value("Bytes", point.value),
-        series: .value("Memory", point.title)
+        series: .value("Segment", point.series)
       )
       .foregroundStyle(by: .value("Memory", point.title))
       .lineStyle(StrokeStyle(lineWidth: point.title == "Footprint" ? 2 : 1.2))
@@ -134,7 +164,7 @@ struct ProcessMemoryVisualization: View {
         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4])).foregroundStyle(theme.border)
         AxisValueLabel {
           if let number = value.as(Double.self) {
-            Text(bytes(UInt64(max(0, number)))).font(.system(size: 8)).foregroundStyle(theme.tertiary)
+            Text(ResourceChartData.byteLabel(number)).font(.system(size: 8)).foregroundStyle(theme.tertiary)
           }
         }
       }
@@ -143,33 +173,31 @@ struct ProcessMemoryVisualization: View {
 
   private var visiblePoints: [ResourceChartPoint] {
     ProcessMemoryMeasure.allCases.flatMap { measure in
-      visible.compactMap { sample in
-        guard let value = measure.value(sample) else { return nil }
-        return ResourceChartPoint(
-          id: "\(measure.rawValue)-\(sample.date.timeIntervalSinceReferenceDate)",
-          date: sample.date, value: Double(value), title: measure.title)
-      }
+      ResourceChartData.points(
+        measure.readings(visible).map { ($0.date, measure.value($0)) }, title: measure.title)
     }
   }
 
   private var memoryList: some View {
-    let current = latest
     return VStack(spacing: 0) {
       HStack {
         Text("Counter").foregroundStyle(theme.secondary)
         Spacer()
-        Text("Current").foregroundStyle(theme.secondary).frame(width: 92, alignment: .trailing)
+        Text("Last reading").foregroundStyle(theme.secondary).frame(width: 92, alignment: .trailing)
         Text("Peak").foregroundStyle(theme.secondary).frame(width: 92, alignment: .trailing)
       }
       .font(.system(size: 10, weight: .medium)).padding(.bottom, 6)
       ForEach(ProcessMemoryMeasure.allCases) { measure in
-        let values = visible.compactMap { measure.value($0) }
+        let readings = measure.readings(visible)
+        let current = readings.last
+        let values = readings.compactMap { measure.value($0) }
         HStack(spacing: 8) {
           Circle().fill(measure.color(theme)).frame(width: 6, height: 6)
           Text(measure.title).font(.system(size: 11))
             .help(measure.source)
           Spacer(minLength: 8)
           Text(current.flatMap(measure.value).map(bytes) ?? "—")
+            .help(current.map { "Sampled " + $0.date.formatted(date: .omitted, time: .standard) } ?? "Not sampled")
             .font(.system(size: 11)).monospacedDigit().frame(width: 92, alignment: .trailing)
           Text(values.max().map(bytes) ?? "—")
             .font(.system(size: 11)).monospacedDigit().frame(width: 92, alignment: .trailing)
@@ -237,25 +265,13 @@ struct ProcessGPUMemoryVisualization: View {
   }
 
   private var chart: some View {
-    let points = visible.flatMap { sample -> [ResourceChartPoint] in
-      [
-        sample.used.map {
-          ResourceChartPoint(
-            id: "used-\(sample.date.timeIntervalSinceReferenceDate)", date: sample.date,
-            value: Double($0), title: "In use")
-        },
-        sample.allocated.map {
-          ResourceChartPoint(
-            id: "allocated-\(sample.date.timeIntervalSinceReferenceDate)", date: sample.date,
-            value: Double($0), title: "Allocated")
-        },
-      ].compactMap { $0 }
-    }
+    let points = ResourceChartData.points(visible.map { ($0.date, $0.used) }, title: "In use")
+      + ResourceChartData.points(visible.map { ($0.date, $0.allocated) }, title: "Allocated")
     let maximum = max(1.0, (points.map(\.value).max() ?? 1) * 1.12)
     return Chart(points) { point in
       LineMark(
         x: .value("Time", point.date), y: .value("Bytes", point.value),
-        series: .value("Memory", point.title)
+        series: .value("Segment", point.series)
       )
       .foregroundStyle(by: .value("Memory", point.title))
       .lineStyle(StrokeStyle(lineWidth: point.title == "In use" ? 2 : 1.2))
@@ -278,7 +294,7 @@ struct ProcessGPUMemoryVisualization: View {
         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [3, 4])).foregroundStyle(theme.border)
         AxisValueLabel {
           if let number = value.as(Double.self) {
-            Text(bytes(UInt64(max(0, number)))).font(.system(size: 8)).foregroundStyle(theme.tertiary)
+            Text(ResourceChartData.byteLabel(number)).font(.system(size: 8)).foregroundStyle(theme.tertiary)
           }
         }
       }

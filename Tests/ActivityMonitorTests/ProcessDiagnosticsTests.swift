@@ -241,6 +241,50 @@ final class ProcessDiagnosticsTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(
       session.memoryHistory.first?.date ?? .distantPast, date.addingTimeInterval(300))
   }
+  func testResourceChartsSplitUnavailableAndLongGapsWithoutLosingZero() {
+    let date = Date(timeIntervalSince1970: 0)
+    let points = ResourceChartData.points([
+      (date, 0), (date.addingTimeInterval(1), nil),
+      (date.addingTimeInterval(2), 20), (date.addingTimeInterval(3), 30),
+      (date.addingTimeInterval(40), 40),
+    ], title: "Memory")
+    XCTAssertEqual(points.map(\.value), [0, 20, 30, 40])
+    XCTAssertEqual(points.map(\.segment), [0, 1, 1, 2])
+    XCTAssertEqual(ResourceChartData.byteLabel(Double(UInt64.max) * 1.12), bytes(UInt64.max))
+  }
+  @MainActor func testMemoryCadenceFallbackAndDetailedAvailability() throws {
+    var row = try ownRow()
+    row.memoryUsesResidentFallback = true
+    row.details.privateMemory = nil
+    row.details.sharedMemory = nil
+    let session = ProcessDiagnosticSession(row: row)
+    let date = Date(timeIntervalSince1970: 0)
+    for index in 0...4000 {
+      let time = date.addingTimeInterval(Double(index) / 4)
+      session.accept(rows: [row], date: time)
+      if index % 20 == 0 {
+        session.appendMemory(.init(date: time.addingTimeInterval(0.01),
+          privateBytes: 123, sharedBytes: 45, detailed: true))
+      }
+    }
+    XCTAssertGreaterThan(session.memoryHistory.count, 3601)
+    XCTAssertLessThanOrEqual(session.memoryHistory.count, 4096)
+    XCTAssertEqual(session.gpuMemoryHistory.count, 3601)
+    XCTAssertLessThan(session.memoryHistory.first!.date.timeIntervalSince(date), 101)
+    XCTAssertNil(session.memoryHistory.first { !$0.detailed }?.footprint)
+    XCTAssertNotNil(session.memoryHistory.first { !$0.detailed }?.resident)
+    session.accept(rows: [row], date: date.addingTimeInterval(1001))
+    XCTAssertEqual(ProcessMemoryMeasure.privateBytes.readings(session.memoryHistory).last?.privateBytes, 123)
+    session.appendMemory(.init(date: date.addingTimeInterval(1002), detailed: true))
+    XCTAssertNil(ProcessMemoryMeasure.privateBytes.readings(session.memoryHistory).last?.privateBytes)
+    // An old worker result cannot extend the retained window backwards.
+    session.appendMemory(.init(date: date, detailed: true))
+    XCTAssertGreaterThanOrEqual(session.memoryHistory.first!.date, date.addingTimeInterval(102))
+    for index in 0...4200 {
+      session.appendMemory(.init(date: date.addingTimeInterval(1003 + Double(index) / 100), detailed: true))
+    }
+    XCTAssertEqual(session.memoryHistory.count, 4096)
+  }
   @MainActor func testSharedLeasesReleaseSessionWithoutRetainingMonitor() async throws {
     let row = try ownRow()
     var monitor: Monitor? = Monitor(startAutomatically: false)
