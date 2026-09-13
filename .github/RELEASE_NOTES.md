@@ -1,27 +1,27 @@
-Activity Monitor 1.6.3 refines process-tree menus and status-item popover interactions.
+Activity Monitor 1.7.0 adds process memory diagnostics and improves GPU monitoring and fullscreen menu-bar behavior.
 
 ### New
 
-- Switch the main process workspace between List and Tree views, with ancestry-aware filtering, branch navigation and persistent expansion state.
-- Collapse or expand individual branches, reveal a selected process in its hierarchy and export the visible tree with parent-process context.
-- Inspect complete or partial CPU and memory usage for a process subtree, with explicit accounting scope in the usage panels.
+- Inspect physical footprint, resident, private/shared resident, compressed and purgeable memory in process diagnostics, with charts, last readings and visible-range peaks.
+- View driver-reported GPU memory in use and allocated for each device and in an aggregate chart. Per-process GPU allocation remains explicitly unavailable where macOS provides no reliable counter.
+- Export bounded process memory and device GPU memory histories with diagnostic snapshots.
 
-### Improved
+### Fixed and improved
 
-- Process-tree usage guidance stays compact in narrow column menus while retaining the accounting caveat.
-- Status-item popovers close when clicking outside the popover, including when the app is inactive, while native menus and popover child windows continue to work normally.
-- The process tree is built and filtered efficiently during telemetry refreshes, with performance coverage for large process sets.
-- Settings menus remain open while live telemetry updates, so changing an interval or display option does not dismiss the menu.
-- Threads, open files, connections, memory maps, mapped images, Mach ports and fileports show a focused set of columns by default.
-- Default columns fit the available window width, with more space for names, paths and endpoints.
-- Right-click a header to show additional fields, fit columns to the window or restore the default layout.
-- Custom column widths and ordering are retained. Wider custom layouts still support horizontal scrolling with both scrollbars attached to the viewport.
-- Numeric values align to the right, empty values display a dash, and tooltips reveal complete text. Filtering and CSV exports include hidden fields.
+- Memory charts preserve unavailable-data gaps and long observation gaps. Detailed region readings retain their own timestamps between lightweight updates.
+- Resident fallback is excluded from the physical-footprint composition series, and large counter values cannot overflow chart label conversion.
+- Memory histories retain fifteen minutes at normal sampling cadence with explicit sample bounds.
+- Process icon retention is limited to 128 process identities and a shared thumbnail cache with an 8 MiB cost target.
+- The status-item popover joins fullscreen Spaces without activating the main window.
+- Intel GPU contexts with direct accumulated execution counters now produce process GPU rates without double counting AppUsage arrays.
+- GPU top-process lists show measured positive activity and an explicit empty state.
+
+The memory investigation found that this app still uses more physical memory than Apple's built-in Activity Monitor in the recorded comparison. This release does not claim to meet a lower absolute footprint.
 
 ### Install
 
 Download the universal DMG or app ZIP for Apple silicon and Intel on macOS 14 or later. Drag Activity Monitor to Applications. SHA256SUMS verifies the downloads.
 
-[Process diagnostics guide](https://github.com/wieslawsoltes/ActivityMonitor/blob/main/docs/diagnostics/README.md) · [Installation guide](https://github.com/wieslawsoltes/ActivityMonitor#installation)
+[Memory investigation](https://github.com/wieslawsoltes/ActivityMonitor/blob/main/docs/performance/MEMORY.md) · [Process diagnostics guide](https://github.com/wieslawsoltes/ActivityMonitor/blob/main/docs/diagnostics/README.md)
 
-[Changes since 1.6.2](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.6.2...v1.6.3)
+[Changes since 1.6.3](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.6.3...v1.7.0)

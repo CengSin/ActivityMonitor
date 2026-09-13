@@ -6,4 +6,4 @@ Check the signing status provided with your download. Developer ID-signed and no
 
 To uninstall, quit the app and move it from Applications to the Trash.
 
-Live metrics use public macOS APIs. Some protected process counters are unavailable. Energy Impact, GPU usage, and per-process packet counts are not provided by these APIs; the interface identifies those limitations. Sampling a protected process may be denied by macOS. Nothing is uploaded.
+Live metrics use public macOS APIs. Some protected process counters are unavailable. Energy Impact, per-process GPU allocation bytes, and per-process packet counts are unavailable; driver-reported GPU usage is available on supported devices, and the interface identifies those limitations. Sampling a protected process may be denied by macOS. Nothing is uploaded.
