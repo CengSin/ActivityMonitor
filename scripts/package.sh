@@ -14,6 +14,10 @@ swift build -c release --arch arm64 --arch x86_64
 BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/ActivityMonitor"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/ActivityMonitor"
+# ditto preserves Sparkle's framework symlinks and executable helper permissions.
+mkdir -p "$APP/Contents/Frameworks"
+rm -rf "$APP/Contents/Frameworks/Sparkle.framework"
+ditto .build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework "$APP/Contents/Frameworks/Sparkle.framework"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -27,6 +31,13 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>CFBundleVersion</key><string>$VERSION</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
+<key>SUFeedURL</key><string>https://github.com/wieslawsoltes/ActivityMonitor/releases/latest/download/appcast.xml</string>
+<key>SUPublicEDKey</key><string>LSbDjvx0CrpFJpSBbNtUeB9JqgqrHzAjeF6NbgtwGAk=</string>
+<key>SUEnableAutomaticChecks</key><true/>
+<key>SUAutomaticallyUpdate</key><false/>
+<key>SUVerifyUpdateBeforeExtraction</key><true/>
+<key>SURequireSignedFeed</key><true/>
+<key>SUEnableSystemProfiling</key><false/>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Wiesław Šoltes</string>
 </dict></plist>
@@ -42,6 +53,11 @@ fi
 if [[ -n "${SIGNING_IDENTITY:-}" ]]; then
  SIGNING_ARGS=(--force --timestamp)
  if [[ -n "${SIGNING_KEYCHAIN:-}" ]]; then SIGNING_ARGS+=(--keychain "$SIGNING_KEYCHAIN"); fi
+ # Sign embedded code inside out with the same Developer ID as the host.
+ SPARKLE="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
+ for COMPONENT in "$SPARKLE/Autoupdate" "$SPARKLE/Updater.app" "$SPARKLE"/XPCServices/*.xpc "$APP/Contents/Frameworks/Sparkle.framework"; do
+  codesign --options runtime --preserve-metadata=entitlements "${SIGNING_ARGS[@]}" --sign "$SIGNING_IDENTITY" "$COMPONENT"
+ done
  codesign --options runtime "${SIGNING_ARGS[@]}" --sign "$SIGNING_IDENTITY" "$APP"
 else
  codesign --force --sign - "$APP"

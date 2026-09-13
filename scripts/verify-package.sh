@@ -7,6 +7,15 @@ for ARCH in arm64 x86_64; do
   lipo "$APP/Contents/MacOS/ActivityMonitor" -verify_arch "$ARCH"
 done
 codesign --verify --deep --strict "$APP"
+SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
+[[ -L "$SPARKLE/Versions/Current" && -x "$SPARKLE/Autoupdate" && -d "$SPARKLE/Updater.app" ]]
+lipo "$SPARKLE/Sparkle" -verify_arch arm64 x86_64
+otool -L "$APP/Contents/MacOS/ActivityMonitor" | grep -F '@rpath/Sparkle.framework/'
+otool -l "$APP/Contents/MacOS/ActivityMonitor" | grep -F '@executable_path/../Frameworks'
+[[ "$(/usr/libexec/PlistBuddy -c 'Print SUFeedURL' "$APP/Contents/Info.plist")" == 'https://github.com/wieslawsoltes/ActivityMonitor/releases/latest/download/appcast.xml' ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print SUPublicEDKey' "$APP/Contents/Info.plist")" == 'LSbDjvx0CrpFJpSBbNtUeB9JqgqrHzAjeF6NbgtwGAk=' ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print SUVerifyUpdateBeforeExtraction' "$APP/Contents/Info.plist")" == true ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print SURequireSignedFeed' "$APP/Contents/Info.plist")" == true ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" == "$VERSION" ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")" == "$VERSION" ]]
 (cd dist && shasum -a 256 -c SHA256SUMS)

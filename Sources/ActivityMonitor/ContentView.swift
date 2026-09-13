@@ -403,6 +403,9 @@ struct ContentView: View {
     menu.addUpdateInterval($monitor.interval)
     if compact { menu.addItem(.separator()) }
     if compact { menu.addSettingsAction("All views & themes") { showGallery = true } }
+    menu.addItem(.separator())
+    AppUpdater.shared.addMenuItems(to: menu)
+    menu.addItem(.separator())
     menu.addSettingsAction("Keyboard shortcuts & data notes") { showHelp = true }
     return menu
   }

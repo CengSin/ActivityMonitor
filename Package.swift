@@ -1,3 +1,16 @@
 // swift-tools-version: 5.9
 import PackageDescription
-let package = Package(name: "ActivityMonitor", platforms: [.macOS(.v14)], products: [.executable(name: "ActivityMonitor", targets: ["ActivityMonitor"])], targets: [.target(name: "SystemBridge", publicHeadersPath: "include", linkerSettings: [.linkedFramework("IOKit")]), .executableTarget(name: "ActivityMonitor", dependencies: ["SystemBridge"], linkerSettings: [.linkedFramework("AppKit")]), .testTarget(name: "ActivityMonitorTests", dependencies: ["ActivityMonitor"])])
+
+let package = Package(
+  name: "ActivityMonitor",
+  platforms: [.macOS(.v14)],
+  products: [.executable(name: "ActivityMonitor", targets: ["ActivityMonitor"])],
+  dependencies: [.package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.6")],
+  targets: [
+    .target(name: "SystemBridge", publicHeadersPath: "include", linkerSettings: [.linkedFramework("IOKit")]),
+    .executableTarget(
+      name: "ActivityMonitor",
+      dependencies: ["SystemBridge", .product(name: "Sparkle", package: "Sparkle")],
+      linkerSettings: [.linkedFramework("AppKit"), .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
+    .testTarget(name: "ActivityMonitorTests", dependencies: ["ActivityMonitor"]),
+  ])

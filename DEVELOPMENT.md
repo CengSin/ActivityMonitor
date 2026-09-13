@@ -49,3 +49,26 @@ Pull-request builds use ad-hoc signing without Apple credentials. Tagged release
 ## Performance regression gates
 
 Run `./scripts/performance.sh` in addition to `swift test` before merging UI or telemetry changes. CI retains release-mode timing samples and physical-footprint measurements. See [performance gates](docs/performance/OPTIMIZATION.md) for budgets, headless coverage, profiling and interpretation.
+
+### Native software updates
+
+Sparkle 2.9.6 is pinned in SwiftPM. `scripts/package.sh` embeds its universal framework,
+including its installer helpers, and signs nested code inside out when a Developer ID
+is configured. Bare `swift run` does not start the updater; run a packaged app to test it.
+The application menu and More menu expose Check for Updates and update preferences.
+Daily checks are enabled by default; downloading and installing automatically is opt-in.
+Disabling automatic checks suspends background updates. Manual checks remain available.
+
+The feed is the `appcast.xml` asset on the latest GitHub release. Both the feed and ZIP
+are Ed25519-signed, and downloads must verify before extraction. Release publishing
+fails if the `SPARKLE_PRIVATE_KEY` repository secret is absent, signing fails, or the
+archive signature does not match the public key embedded in the app. The secret is a
+base64 Sparkle private seed, supplied over stdin, never in command arguments. The
+maintainer backup is in the login Keychain under Sparkle account
+`com.wieslawsoltes.ActivityMonitor`; keep that key for all future releases.
+
+After building, `VERSION=x.y.z ./scripts/generate-appcast.sh dist` signs a feed locally
+using that Keychain account. CI resolves the pinned tools before loading the secret and
+signs the exact verified archive after optional Developer ID signing/notarization.
+Never edit a signed feed afterward. Do not replace the public key casually: installed
+copies trust it, and ad-hoc distributions cannot use Developer ID key rotation.

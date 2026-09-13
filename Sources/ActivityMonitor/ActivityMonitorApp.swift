@@ -15,6 +15,7 @@ import SwiftUI
       .windowStyle(.hiddenTitleBar)
       .commands {
         CommandGroup(replacing: .newItem) {}
+        CommandGroup(after: .appInfo) { UpdateCommands() }
         ProcessViewCommands()
         CommandMenu("Layout") {
           Button("Compact Window") { resize(width: 520, height: 760) }.keyboardShortcut(
@@ -60,6 +61,10 @@ private struct MonitorPauseCommand: View {
 }
 
 @MainActor final class MonitorAppDelegate: NSObject, NSApplicationDelegate {
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    AppUpdater.shared.start()
+  }
+
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     false
   }
