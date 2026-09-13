@@ -215,11 +215,13 @@ struct ProcessDiagnosticsView: View {
   }
   private var contentHeader: some View {
     HStack(spacing: 12) {
-      VStack(alignment: .leading, spacing: 5) {
+      HStack(spacing: 6) {
         Text(session.tab.rawValue + (session.tab.metric != nil ? " activity" : ""))
           .font(.system(size: 24, weight: .semibold)).tracking(-0.6)
-        Text(session.tab.subtitle).font(.system(size: 11)).foregroundStyle(theme.secondary)
-          .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+        DiagnosticInfoButton(title: session.tab.rawValue,
+          text: session.tab.subtitle + (session.tab == .overview
+            ? " Unavailable values mean macOS restricts access or does not expose the counter." : ""),
+          theme: theme)
       }
       Spacer(minLength: 0)
       if session.tab.metric != nil {
@@ -308,8 +310,6 @@ struct ProcessDiagnosticsView: View {
               }
             }
           }
-          Text("Unavailable values mean macOS restricts access or does not expose the counter.")
-            .font(.system(size: 11)).foregroundStyle(theme.tertiary)
         }.padding(.horizontal, 22).padding(.bottom, 22)
       }
     } else if session.tab == .reports {
@@ -467,6 +467,7 @@ struct ProcessDiagnosticsView: View {
               value: (metric == .disk
                 ? session.histories.last?.written : session.histories.last?.sent)
                 .map { bytes(UInt64(max(0, $0))) + "/s" } ?? "—")
+            activityInfo(metric)
           }
         } else {
           HStack(alignment: .top) {
@@ -481,6 +482,7 @@ struct ProcessDiagnosticsView: View {
                 .font(.system(size: 34, weight: .medium)).tracking(-1).monospacedDigit()
             }
             Spacer()
+            activityInfo(metric)
             if metric == .cpu || metric == .energy {
               CPUChartModePicker(individual: $session.showsThreadCPU, threads: true, theme: theme)
             } else {
@@ -499,10 +501,6 @@ struct ProcessDiagnosticsView: View {
             presentation: session.threadChartPresentation
           )
           .frame(height: 300)
-          Text(
-            "Individual thread CPU · Refreshed at most every 2 seconds · History begins when enabled"
-          )
-          .font(.system(size: 10)).foregroundStyle(theme.tertiary)
         } else {
           TelemetryChart(
             samples: ProcessActivityPresentation.samples(session.histories, metric: metric),
@@ -510,10 +508,15 @@ struct ProcessDiagnosticsView: View {
             theme: theme, perProcess: true
           ).frame(height: 155)
         }
-        Text(ProcessActivityPresentation.note(metric)).font(.system(size: 10))
-          .foregroundStyle(theme.secondary).fixedSize(horizontal: false, vertical: true)
       }
     }
+  }
+  private func activityInfo(_ metric: Metric) -> some View {
+    DiagnosticInfoButton(title: "Process \(metric.rawValue) usage",
+      text: ProcessActivityPresentation.note(metric)
+        + ((metric == .cpu || metric == .energy) && session.showsThreadCPU
+          ? "\n\nIndividual thread CPU refreshes at most every 2 seconds. History begins when enabled." : ""),
+      theme: theme)
   }
   private var overviewGroups: [DiagnosticFieldGroup] {
     let identity = [

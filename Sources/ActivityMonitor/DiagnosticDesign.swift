@@ -1,5 +1,34 @@
 import SwiftUI
 
+/// Hover for a tooltip, or activate to keep the explanation open for reading.
+struct DiagnosticInfoButton: View {
+  let title: String
+  let text: String
+  let theme: MonitorTheme
+  @State private var expanded = false
+
+  var body: some View {
+    Button { expanded.toggle() } label: {
+      Image(systemName: "info.circle")
+        .font(.system(size: 12)).foregroundStyle(theme.secondary)
+        .frame(width: 22, height: 22).contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .help(text)
+    .accessibilityLabel("About \(title)")
+    .accessibilityHint(text)
+    .popover(isPresented: $expanded, arrowEdge: .top) {
+      VStack(alignment: .leading, spacing: 8) {
+        Text(title).font(.system(size: 13, weight: .semibold))
+        Text(text).font(.system(size: 12)).textSelection(.enabled)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      .foregroundStyle(theme.text).padding(16).frame(width: 350)
+      .background(theme.card)
+    }
+  }
+}
+
 /// Shared surfaces keep process workspaces in the same visual family as the main monitor.
 struct DiagnosticPanel<Content: View>: View {
   let theme: MonitorTheme

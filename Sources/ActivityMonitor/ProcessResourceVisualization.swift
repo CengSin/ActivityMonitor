@@ -104,10 +104,10 @@ struct ProcessMemoryVisualization: View {
     DiagnosticPanel(theme: theme) {
       VStack(alignment: .leading, spacing: 14) {
         HStack(alignment: .firstTextBaseline) {
-          VStack(alignment: .leading, spacing: 4) {
+          HStack(spacing: 6) {
             Text("Memory composition").font(.system(size: 13, weight: .semibold))
-            Text("Physical footprint and the native accounting available for this process.")
-              .font(.system(size: 10)).foregroundStyle(theme.secondary)
+            DiagnosticInfoButton(title: "Memory composition",
+              text: "Physical footprint and the native accounting available for this process. Footprint is the primary physical-memory comparison. Resident, private and shared values can overlap shared pages and are therefore diagnostic breakdowns rather than additive totals.", theme: theme)
           }
           Spacer()
           Text(latest.flatMap { $0.footprint }.map(bytes) ?? "—")
@@ -123,11 +123,6 @@ struct ProcessMemoryVisualization: View {
             .frame(height: 190)
         }
         memoryList
-        Text(
-          "Footprint is the primary physical-memory comparison. Resident, private and shared values can overlap shared pages and are therefore diagnostic breakdowns rather than additive totals."
-        )
-        .font(.system(size: 10)).foregroundStyle(theme.tertiary).fixedSize(
-          horizontal: false, vertical: true)
       }
     }
   }
@@ -235,10 +230,10 @@ struct ProcessGPUMemoryVisualization: View {
     DiagnosticPanel(theme: theme) {
       VStack(alignment: .leading, spacing: 14) {
         HStack(alignment: .firstTextBaseline) {
-          VStack(alignment: .leading, spacing: 4) {
+          HStack(spacing: 6) {
             Text("GPU device memory").font(.system(size: 13, weight: .semibold))
-            Text("Driver-reported memory across the GPU devices visible to macOS.")
-              .font(.system(size: 10)).foregroundStyle(theme.secondary)
+            DiagnosticInfoButton(title: "GPU device memory",
+              text: "Driver-reported memory across the GPU devices visible to macOS. Public Metal and IOKit APIs expose device totals, but the process graphics ledgers above provide separate kernel accounting rather than a complete Metal allocation total. The process GPU activity chart above remains per-process where the driver publishes execution counters.", theme: theme)
           }
           Spacer()
           Text(visible.last?.used.map(bytes) ?? "—")
@@ -255,11 +250,6 @@ struct ProcessGPUMemoryVisualization: View {
           }.frame(maxWidth: .infinity).frame(height: 170)
         }
         deviceList
-        Text(
-          "Public Metal and IOKit APIs expose device totals, but the process graphics ledgers above provide separate kernel accounting rather than a complete Metal allocation total. The process GPU activity chart above remains per-process where the driver publishes execution counters."
-        )
-        .font(.system(size: 10)).foregroundStyle(theme.tertiary).fixedSize(
-          horizontal: false, vertical: true)
       }
     }
   }

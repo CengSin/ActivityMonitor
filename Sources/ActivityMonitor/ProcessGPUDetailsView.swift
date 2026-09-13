@@ -21,9 +21,16 @@ struct ProcessGPUDetailsView: View {
   var body: some View {
     DiagnosticPanel(theme: theme) {
       VStack(alignment: .leading, spacing: 12) {
-        Text("Process graphics memory").font(.system(size: 13, weight: .semibold))
-        Text(history.last?.status ?? "Waiting for process graphics accounting")
-          .font(.system(size: 10)).foregroundStyle(theme.secondary)
+        HStack(spacing: 6) {
+          Text("Process graphics memory").font(.system(size: 13, weight: .semibold))
+          DiagnosticInfoButton(title: "Process graphics memory",
+            text: "Charged graphics memory contributes to this process’s physical footprint; excluded memory does not. Compressed balances are logical bytes. These graphics-tagged kernel ledgers can include shared surfaces and are not a complete Metal allocation inventory, dedicated VRAM usage, or a per-device breakdown. Zero means a zero ledger balance, not proof that the process uses no GPU memory." + "\n\n" + (history.last?.status ?? "Waiting for process graphics accounting"), theme: theme)
+          Spacer(minLength: 0)
+        }
+        if history.last.map({ values($0).contains(where: { $0 == nil }) }) ?? true {
+          Text(history.last?.status ?? "Waiting for process graphics accounting")
+            .font(.system(size: 10)).foregroundStyle(theme.secondary)
+        }
         let points = titles.indices.flatMap { index in
           ResourceChartData.points(visible.map { ($0.date, values($0)[index]) }, title: titles[index])
         }
@@ -67,14 +74,16 @@ struct ProcessGPUDetailsView: View {
           Text("Sampled " + date.formatted(date: .omitted, time: .standard))
             .font(.system(size: 10)).foregroundStyle(theme.tertiary)
         }
-        Text("Charged graphics memory contributes to this process’s physical footprint; excluded memory does not. Compressed balances are logical bytes. These graphics-tagged kernel ledgers can include shared surfaces and are not a complete Metal allocation inventory, dedicated VRAM usage, or a per-device breakdown. Zero means a zero ledger balance, not proof that the process uses no GPU memory.")
-          .font(.system(size: 10)).foregroundStyle(theme.secondary)
-          .fixedSize(horizontal: false, vertical: true)
       }
     }
     DiagnosticPanel(theme: theme) {
       VStack(alignment: .leading, spacing: 12) {
-        Text("Process activity by GPU").font(.system(size: 13, weight: .semibold))
+        HStack(spacing: 6) {
+          Text("Process activity by GPU").font(.system(size: 13, weight: .semibold))
+          DiagnosticInfoButton(title: "Process activity by GPU",
+            text: "Rates include only clients with valid consecutive samples. Reporting clients have published execution counters; other GPU connections are not counted. New or reset clients need a baseline; vanished clients retain observed time but have no current rate. Driver coverage may be partial. Overlapping work can exceed 100%.", theme: theme)
+          Spacer(minLength: 0)
+        }
         if activity.isEmpty {
           Text("No driver execution counters reported for this process.")
             .font(.system(size: 11)).foregroundStyle(theme.secondary)
@@ -92,9 +101,6 @@ struct ProcessGPUDetailsView: View {
               .fixedSize(horizontal: false, vertical: true)
           }
         }
-        Text("Rates include only clients with valid consecutive samples. Reporting clients have published execution counters; other GPU connections are not counted. New or reset clients need a baseline; vanished clients retain observed time but have no current rate. Driver coverage may be partial. Overlapping work can exceed 100%.")
-          .font(.system(size: 10)).foregroundStyle(theme.tertiary)
-          .fixedSize(horizontal: false, vertical: true)
       }
     }
   }
