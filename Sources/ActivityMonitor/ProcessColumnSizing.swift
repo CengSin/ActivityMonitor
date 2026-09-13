@@ -97,7 +97,7 @@ struct ProcessColumnLayout: Equatable {
     case "kind", "nap", "sandbox", "restricted", "sleep", "suddenTermination": return 60
     case "time", "gpuTime": return 86
     case "user": return 100
-    case "memory", "resident", "privateMemory", "sharedMemory", "purgeable", "compressed",
+    case "graphicsMemory", "memory", "resident", "privateMemory", "sharedMemory", "purgeable", "compressed",
       "written", "read", "received", "sent":
       return column.id == "primary" || column.id == "received" ? 110 : 96
     default: return 88
@@ -121,7 +121,7 @@ struct ProcessColumnLayout: Equatable {
     case "threads", "ports", "pid": base = 64
     case "kind", "nap", "sandbox", "restricted": base = 70
     case "user": base = 116
-    case "memory", "resident", "privateMemory", "sharedMemory", "purgeable", "compressed",
+    case "graphicsMemory", "memory", "resident", "privateMemory", "sharedMemory", "purgeable", "compressed",
       "written", "read", "received", "sent":
       base = 112
     case "time", "gpuTime": base = 96

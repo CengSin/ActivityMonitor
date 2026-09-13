@@ -73,7 +73,7 @@ enum ProcessActivityPresentation {
         "Receive is above the baseline; send is below. Network counters refresh approximately every five seconds; observed rates can be bursty."
     case .gpu:
       return
-        "GPU execution rate can exceed 100% when work overlaps. Device memory is driver-reported across the visible GPUs; public macOS APIs do not expose per-process allocation bytes. Observed GPU time covers this app session."
+        "GPU execution rate can exceed 100% when work overlaps. Device memory is driver-reported across the visible GPUs; process graphics ledgers provide separate kernel accounting, not a complete Metal allocation inventory. Observed GPU time covers this app session."
     }
   }
 }
@@ -237,6 +237,9 @@ struct ProcessDiagnosticsView: View {
               history: session.memoryHistory, theme: theme, range: session.range)
           }
           if metric == .gpu {
+            ProcessGPUDetailsView(history: session.graphicsHistory,
+              activity: session.row.gpuDevices ?? [], devices: session.gpuMemoryDevices,
+              range: session.range, theme: theme)
             ProcessGPUMemoryVisualization(
               history: session.gpuMemoryHistory, devices: session.gpuMemoryDevices,
               theme: theme, range: session.range)

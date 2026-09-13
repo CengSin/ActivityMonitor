@@ -564,6 +564,7 @@ struct MonitorProcessTable: View {
       return "Sort by subtree usage. " + counter.help + "\n" + ProcessSubtreeUsage.scopeHelp
     }
     switch ProcessColumns.canonical(key, metric: metric) {
+    case "graphicsMemory": return ProcessUsageMetric.graphicsMemory.help
     case "gpuTime": return "Sort by GPU execution time observed during this session"
     case "gpu":
       return

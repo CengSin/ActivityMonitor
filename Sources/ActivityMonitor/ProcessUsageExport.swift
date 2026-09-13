@@ -120,6 +120,7 @@ extension ProcessUsageMetric {
     case .time: return "CPU seconds"
     case .gpu: return "GPU %"
     case .gpuTime: return "Observed GPU seconds"
+    case .graphicsMemory: return "Graphics charged bytes"
     case .threads: return "Threads"
     case .memory: return "Memory bytes"
     case .resident: return "Resident bytes"

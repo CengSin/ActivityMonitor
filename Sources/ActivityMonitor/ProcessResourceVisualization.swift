@@ -236,7 +236,7 @@ struct ProcessGPUMemoryVisualization: View {
       VStack(alignment: .leading, spacing: 14) {
         HStack(alignment: .firstTextBaseline) {
           VStack(alignment: .leading, spacing: 4) {
-            Text("GPU memory").font(.system(size: 13, weight: .semibold))
+            Text("GPU device memory").font(.system(size: 13, weight: .semibold))
             Text("Driver-reported memory across the GPU devices visible to macOS.")
               .font(.system(size: 10)).foregroundStyle(theme.secondary)
           }
@@ -256,7 +256,7 @@ struct ProcessGPUMemoryVisualization: View {
         }
         deviceList
         Text(
-          "Public Metal and IOKit APIs expose device totals, but macOS does not publish per-process GPU allocation bytes. The process GPU activity chart above remains per-process where the driver publishes execution counters."
+          "Public Metal and IOKit APIs expose device totals, but the process graphics ledgers above provide separate kernel accounting rather than a complete Metal allocation total. The process GPU activity chart above remains per-process where the driver publishes execution counters."
         )
         .font(.system(size: 10)).foregroundStyle(theme.tertiary).fixedSize(
           horizontal: false, vertical: true)
@@ -312,8 +312,8 @@ struct ProcessGPUMemoryVisualization: View {
       .font(.system(size: 10, weight: .medium)).padding(.bottom, 6)
       HStack(spacing: 8) {
         Circle().fill(theme.blue).frame(width: 6, height: 6)
-        Text("Process allocation").font(.system(size: 11))
-          .help("macOS does not expose per-process GPU allocation bytes through public APIs")
+        Text("Complete process allocation").font(.system(size: 11))
+          .help("A complete cross-process Metal allocation inventory is unavailable; see the process graphics ledgers above")
         Spacer(minLength: 8)
         Text("—").font(.system(size: 11)).monospacedDigit().frame(width: 92, alignment: .trailing)
         Text("Unavailable").font(.system(size: 11)).foregroundStyle(theme.tertiary)

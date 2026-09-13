@@ -8,7 +8,7 @@ final class ProcessColumnsTests: XCTestCase {
   func testEveryPerspectiveOffersNativeCatalogWithoutDuplicatesAndPreservesDefaults() {
     for metric in Metric.allCases {
       let all = ProcessColumns.available(metric)
-      XCTAssertEqual(all.count, 28)
+      XCTAssertEqual(all.count, 29)
       XCTAssertEqual(
         Set(all.map { ProcessColumns.canonical($0.id, metric: metric) }),
         Set(ProcessColumns.catalog.map(\.id)))

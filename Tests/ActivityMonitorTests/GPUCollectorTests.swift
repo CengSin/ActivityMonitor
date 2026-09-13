@@ -33,6 +33,30 @@ final class GPUCollectorTests: XCTestCase {
   func snapshot(_ time: Double, _ clients: [GPUClientSample]) -> GPUHardwareSnapshot {
     GPUHardwareSnapshot(devices: [], clients: clients, uptime: time)
   }
+  func testDeviceBreakdownCoverageLongGapsAndMissingDevices() throws {
+    var tracker = GPUProcessTracker()
+    let ids: [Int32: UInt64] = [42: 100]
+    _ = tracker.update(snapshot(1, [client(0), client(0, device: 2)]), identities: ids)
+    let reading = try XCTUnwrap(tracker.update(snapshot(3, [client(1_000_000_000),
+      client(1_000_000_000), client(9_000_000_000, id: 11),
+      client(2_000_000_000, device: 2)]), identities: ids)[42])
+    XCTAssertEqual(reading.devices.map(\.percent), [50, 100])
+    XCTAssertEqual(reading.devices.map(\.seconds), [1, 2])
+    XCTAssertEqual(reading.devices.map(\.clientCount), [2, 1])
+    XCTAssertEqual(reading.devices.map(\.sampledClientCount), [1, 1])
+    XCTAssertEqual(reading.devices.map(\.counterCount), [2, 1])
+    let missing = try XCTUnwrap(tracker.update(snapshot(4, []), identities: ids)[42])
+    XCTAssertEqual(missing.devices.map(\.seconds), [1, 2])
+    XCTAssertEqual(missing.devices.map(\.clientCount), [0, 0])
+    XCTAssertNil(missing.percent)
+    _ = tracker.update(snapshot(5, [client(1_000_000_000)]), identities: ids)
+    let gap = tracker.update(snapshot(100, [client(90_000_000_000)]), identities: ids)[42]
+    XCTAssertNil(gap?.percent)
+    XCTAssertEqual(gap?.seconds, 3)
+    let reused = tracker.update(snapshot(101, [client(91_000_000_000)]), identities: [42: 101])[42]
+    XCTAssertNil(reused?.seconds)
+    XCTAssertEqual(reused?.devices.count, 1)
+  }
   func testParserDistinguishesZeroFromMissingAndRejectsInvalidNumbers() {
     XCTAssertEqual(GPURegistryParser.percent(0), 0)
     XCTAssertEqual(GPURegistryParser.percent(100), 100)

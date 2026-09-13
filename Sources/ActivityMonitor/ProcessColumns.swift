@@ -9,6 +9,7 @@ enum ProcessColumns {
       values = [
         .init(id: "primary", title: "% GPU", weight: 0.85),
         .init(id: "gpuTime", title: "GPU time", weight: 1.35),
+        .init(id: "graphicsMemory", title: "Graphics charged", weight: 1.3),
         .init(id: "cpu", title: "% CPU", weight: 0.8),
         .init(id: "memory", title: "Memory", weight: 1.1),
         .init(id: "kind", title: "Kind", weight: 0.8),
@@ -79,6 +80,7 @@ enum ProcessColumns {
     .init(id: "time", title: "CPU time", weight: 1.2),
     .init(id: "gpu", title: "% GPU", weight: 0.8),
     .init(id: "gpuTime", title: "GPU time", weight: 1.35),
+    .init(id: "graphicsMemory", title: "Graphics charged", weight: 1.3),
     .init(id: "threads", title: "Threads", weight: 0.8),
     .init(id: "ports", title: "Ports", weight: 0.8),
     .init(id: "resident", title: "Real memory", weight: 1.1),

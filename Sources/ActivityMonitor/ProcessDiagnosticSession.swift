@@ -199,6 +199,7 @@ enum DiagnosticCommand {
   @Published private(set) var histories: [ProcessActivitySample] = []
   @Published private(set) var memoryHistory: [ProcessMemorySample] = []
   @Published private(set) var gpuMemoryHistory: [ProcessGPUMemorySample] = []
+  @Published private(set) var graphicsHistory: [ProcessGraphicsMemorySample] = []
   @Published private(set) var gpuMemoryDevices: [GPUDeviceSample] = []
   @Published private(set) var fields: [DiagnosticField] = []
   @Published private(set) var sections: [DiagnosticTab: DiagnosticSection] = [:]
@@ -264,6 +265,17 @@ enum DiagnosticCommand {
     // 3,601 live points at 250 ms plus detailed reads and bounded manual refreshes.
     if memoryHistory.count > 4096 { memoryHistory.removeFirst(memoryHistory.count - 4096) }
   }
+  func appendGraphics(_ sample: ProcessGraphicsMemorySample) {
+    if let index = graphicsHistory.firstIndex(where: { $0.date == sample.date }) {
+      graphicsHistory[index] = sample
+    } else {
+      let index = graphicsHistory.firstIndex { $0.date > sample.date } ?? graphicsHistory.endIndex
+      graphicsHistory.insert(sample, at: index)
+    }
+    let cutoff = (graphicsHistory.last?.date ?? sample.date).addingTimeInterval(-900)
+    graphicsHistory.removeAll { $0.date < cutoff }
+    if graphicsHistory.count > 901 { graphicsHistory.removeFirst(graphicsHistory.count - 901) }
+  }
   private func appendGPUMemory(_ sample: ProcessGPUMemorySample) {
     if let index = gpuMemoryHistory.firstIndex(where: { $0.date == sample.date }) {
       gpuMemoryHistory[index] = sample
@@ -316,6 +328,7 @@ enum DiagnosticCommand {
         sharedBytes: current.details.sharedMemory,
         compressed: current.details.compressed,
         purgeable: current.details.purgeable))
+    if let graphics = current.details.graphics { appendGraphics(graphics) }
     gpuMemoryDevices = gpuDevices
     appendGPUMemory(
       .init(
@@ -379,6 +392,7 @@ enum DiagnosticCommand {
       self.collectionStatus = nil
       self.fields = snapshot.fields
       if let memory = snapshot.memory { self.appendMemory(memory) }
+      if let graphics = snapshot.graphics { self.appendGraphics(graphics) }
       if let section = snapshot.section { self.sections[requested] = section }
       self.collectedTab = requested
       self.lastCollection = Date()
@@ -429,6 +443,7 @@ enum DiagnosticCommand {
       var fields: [DiagnosticField]
       var history: [ProcessActivitySample]
       var memoryHistory: [ProcessMemorySample]
+      var graphicsHistory: [ProcessGraphicsMemorySample]
       var gpuMemoryHistory: [ProcessGPUMemorySample]
       var gpuMemoryDevices: [GPUDeviceSample]
       var sections: [String: DiagnosticSection]
@@ -437,7 +452,7 @@ enum DiagnosticCommand {
     }
     let value = Export(
       identity: id, process: row, status: state, fields: fields, history: histories,
-      memoryHistory: memoryHistory, gpuMemoryHistory: gpuMemoryHistory,
+      memoryHistory: memoryHistory, graphicsHistory: graphicsHistory, gpuMemoryHistory: gpuMemoryHistory,
       gpuMemoryDevices: gpuMemoryDevices,
       sections: Dictionary(uniqueKeysWithValues: sections.map { ($0.key.rawValue, $0.value) }),
       report: report, threadCPU: threadCPU)

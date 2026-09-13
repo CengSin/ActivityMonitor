@@ -51,9 +51,7 @@ system compositor and are not equivalent to a retained application data cache.
   footprint from `proc_pid_rusage`, resident task bytes, compressed and purgeable bytes
   from the existing task inspection path, and private/shared resident bytes from the
   bounded memory-region traversal. Missing permissions remain optional values.
-- GPU diagnostics retain only device-level driver totals. Public macOS APIs expose device
-  memory counters but do not expose a reliable per-process GPU allocation total, so the UI
-  labels that value unavailable instead of fabricating a process number.
+- GPU diagnostics now retain separate bounded per-process graphics-ledger histories in addition to device totals. These reuse the existing task memory read and do not represent a complete GPU allocation inventory. [API investigation](../diagnostics/GPU_MEMORY.md) corrects the original, overly broad claim that no process graphics memory accounting was available.
 
 These changes reduce avoidable retained data while keeping process lists, sorting,
 diagnostics, exports, charts and permissions behavior intact. Further rendering and allocation profiling is needed to determine how much of the remaining footprint can be reduced.

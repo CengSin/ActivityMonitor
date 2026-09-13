@@ -101,6 +101,7 @@ struct DiagnosticSnapshot: Codable {
   var fields: [DiagnosticField] = []
   var section: DiagnosticSection?
   var memory: ProcessMemorySample? = nil
+  var graphics: ProcessGraphicsMemorySample? = nil
   var tab: DiagnosticTab
   var valid = true
   var identityStatus: ProcessIdentityStatus = .matching
@@ -221,6 +222,11 @@ enum DiagnosticCollector {
       if let value = memory.privateBytes { snapshot.fields.append(.init("Real private memory", bytes(value))) }
       if let value = memory.sharedBytes { snapshot.fields.append(.init("Real shared memory", bytes(value))) }
       snapshot.memory = memory
+    }
+    if tab == .gpu {
+      var details = AMMemoryDetails()
+      am_memory_details(identity.pid, &details)
+      snapshot.graphics = ProcessGraphicsMemorySample(details, date: snapshot.date)
     }
     if tab == .energy {
       var assertions: Unmanaged<CFDictionary>?

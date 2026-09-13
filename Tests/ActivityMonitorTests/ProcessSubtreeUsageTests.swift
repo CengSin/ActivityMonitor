@@ -25,6 +25,10 @@ enum ProcessUsageFixture {
       purgeable: units * 53, compressed: units * 59, wakeups: Double(units) * 0.25,
       packetsIn: units * 31, packetsOut: units * 37,
       sandbox: true, restricted: false, preventingSleep: false)
+    var graphics = AMMemoryDetails()
+    graphics.graphicsAccessible = 1
+    graphics.graphicsFootprint = Int64(units * 61)
+    row.details.graphics = .init(graphics, date: Date(timeIntervalSince1970: 0))
     return row
   }
 
@@ -60,7 +64,7 @@ final class ProcessSubtreeUsageTests: XCTestCase {
       .read: .integer(187), .written: .integer(209), .received: .integer(253), .sent: .integer(319),
       .packetsIn: .integer(341), .packetsOut: .integer(407), .ports: .integer(451),
       .privateMemory: .integer(473), .sharedMemory: .integer(517), .purgeable: .integer(583),
-      .compressed: .integer(649), .wakeups: .number(2.75),
+      .compressed: .integer(649), .wakeups: .number(2.75), .graphicsMemory: .integer(671),
     ]
     XCTAssertEqual(Set(expected.keys), Set(ProcessUsageMetric.allCases))
     XCTAssertEqual(total.processCount, 4)

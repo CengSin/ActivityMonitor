@@ -19,6 +19,7 @@ struct ProcessDetails: Codable, Equatable {
   var sharedMemory: UInt64?
   var purgeable: UInt64?
   var compressed: UInt64?
+  var graphics: ProcessGraphicsMemorySample?
   var wakeups: Double?
   var packetsIn: UInt64?
   var packetsOut: UInt64?
@@ -85,6 +86,7 @@ final class ProcessDetailsCollector: @unchecked Sendable {
       result.preventingSleep = sleep.map { $0.contains(process.pid) }
       var memory = AMMemoryDetails()
       am_memory_details(process.pid, &memory)
+      result.graphics = ProcessGraphicsMemorySample(memory, date: Date())
       if memory.vmAccessible != 0 {
         result.purgeable = memory.purgeable
         result.compressed = memory.compressed
