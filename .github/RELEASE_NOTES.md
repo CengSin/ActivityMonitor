@@ -11,6 +11,7 @@ Activity Monitor 1.9.0 adds native software updates and gives more window space 
 - A compact, single-row overview header retains the GPU selector, history range, live/paused status, and help. Hover over the info button for a tooltip or click it to read the explanation.
 - All six metric tabs now stay in the native macOS title bar. Narrow windows use icons; wider windows include labels and additional actions.
 - Metric tabs use a single native glass outline on macOS Tahoe, removing the redundant border.
+- A small gap below the title bar separates metric tabs from the overview controls at every window size.
 - Native window controls support normal window dragging, zooming, and full screen. Keyboard shortcuts and distinct accessibility labels remain available.
 
 ### Install
