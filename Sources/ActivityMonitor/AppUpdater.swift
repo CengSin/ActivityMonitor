@@ -33,6 +33,8 @@ import SwiftUI
     controller.updater.automaticallyChecksForUpdates = enabled
   }
   func setAutomaticDownloads(_ enabled: Bool) {
+    // Sparkle rejects automatic downloads while background checks are disabled.
+    if enabled { controller.updater.automaticallyChecksForUpdates = true }
     controller.updater.automaticallyDownloadsUpdates = enabled
   }
 
@@ -47,7 +49,6 @@ import SwiftUI
     }
     menu.addSettingsAction("Automatically download and install updates", checked: automaticDownloads) {
       self.setAutomaticDownloads(!self.automaticDownloads)
-      if self.automaticDownloads { self.setAutomaticChecks(true) }
     }
   }
 }
