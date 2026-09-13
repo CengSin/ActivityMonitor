@@ -160,6 +160,7 @@ struct MetricSwitcher: View {
           }.frame(maxWidth: compact ? .infinity : nil).padding(.horizontal, compact ? 0 : 10)
             .frame(height: controlHeight)
         }.buttonStyle(MonitorSegmentButton(theme: theme, active: item == metric))
+          .accessibilityIdentifier("monitor-metric-\(item.rawValue)")
           .accessibilityLabel(item.rawValue).accessibilityAddTraits(
             item == metric ? .isSelected : []
           )
@@ -167,6 +168,7 @@ struct MetricSwitcher: View {
       }
     }.padding(4).background(theme.recessed, in: RoundedRectangle(cornerRadius: 11))
       .overlay(RoundedRectangle(cornerRadius: 11).stroke(theme.separator, lineWidth: 1))
+      .accessibilityElement(children: .contain)
   }
 }
 struct HistoryRangePicker: View {

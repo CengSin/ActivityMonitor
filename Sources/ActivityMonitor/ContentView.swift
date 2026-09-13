@@ -299,7 +299,6 @@ struct ContentView: View {
       )
       .frame(width: layout.width < 860 ? 210 : nil)
       .fixedSize(horizontal: true, vertical: true)
-      .accessibilityIdentifier("monitor-metric-tabs")
     }
     ToolbarItem(placement: .primaryAction) {
       HStack(spacing: 4) {
@@ -327,7 +326,7 @@ struct ContentView: View {
         }
         SettingsMenuButton { settingsMenu(compact: layout.width < 1350) }
           .frame(width: 32, height: 32)
-      }.fixedSize()
+      }.fixedSize().accessibilityElement(children: .contain)
     }
   }
   private func settingsMenu(compact: Bool) -> NSMenu {
