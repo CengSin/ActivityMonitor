@@ -1,27 +1,26 @@
-Activity Monitor 1.7.0 adds process memory diagnostics and improves GPU monitoring and fullscreen menu-bar behavior.
+Activity Monitor 1.8.0 adds per-process graphics memory accounting, more GPU activity details, and compact diagnostic help.
 
 ### New
 
-- Inspect physical footprint, resident, private/shared resident, compressed and purgeable memory in process diagnostics, with charts, last readings and visible-range peaks.
-- View driver-reported GPU memory in use and allocated for each device and in an aggregate chart. Per-process GPU allocation remains explicitly unavailable where macOS provides no reliable counter.
-- Export bounded process memory and device GPU memory histories with diagnostic snapshots.
+- Track charged, charged compressed, excluded, and excluded compressed graphics memory for each accessible process using macOS task-memory ledgers.
+- Sort processes by **Graphics charged**, inspect subtree subtotals, and view graphics-memory histories with last readings and visible-range peaks.
+- Inspect per-GPU process execution rates, observed GPU time, measured/reporting client coverage, and execution-counter counts.
+- Export timestamped graphics-memory histories and per-device process activity in diagnostic JSON.
 
-### Fixed and improved
+### Improved
 
-- Memory charts preserve unavailable-data gaps and long observation gaps. Detailed region readings retain their own timestamps between lightweight updates.
-- Resident fallback is excluded from the physical-footprint composition series, and large counter values cannot overflow chart label conversion.
-- Memory histories retain fifteen minutes at normal sampling cadence with explicit sample bounds.
-- Process icon retention is limited to 128 process identities and a shared thumbnail cache with an 8 MiB cost target.
-- The status-item popover joins fullscreen Spaces without activating the main window.
-- Intel GPU contexts with direct accumulated execution counters now produce process GPU rates without double counting AppUsage arrays.
-- GPU top-process lists show measured positive activity and an explicit empty state.
+- Process-tree construction avoids copying full process records into traversal queues and skips redundant filtering of complete snapshots.
 
-The memory investigation found that this app still uses more physical memory than Apple's built-in Activity Monitor in the recorded comparison. This release does not claim to meet a lower absolute footprint.
+- Diagnostic explanations and subtitles now use compact info buttons. Hover for a tooltip or click to keep the full explanation open; access errors and missing-data states remain visible.
+- GPU tracking preserves missing/reset/warmup states, deduplicates reporting clients, and rebaselines after long observation gaps.
+- Graphics accounting reuses the background task-memory query, checks returned API revisions, preserves measured zero, and keeps unavailable readings distinct.
+
+Graphics ledgers are kernel accounting, not a complete Metal allocation inventory or dedicated VRAM total. Shared surfaces can overlap, and compressed balances are logical bytes. No private frameworks, root access, or task-control rights are required.
 
 ### Install
 
 Download the universal DMG or app ZIP for Apple silicon and Intel on macOS 14 or later. Drag Activity Monitor to Applications. SHA256SUMS verifies the downloads.
 
-[Memory investigation](https://github.com/wieslawsoltes/ActivityMonitor/blob/main/docs/performance/MEMORY.md) · [Process diagnostics guide](https://github.com/wieslawsoltes/ActivityMonitor/blob/main/docs/diagnostics/README.md)
+[GPU memory API investigation](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.0/docs/diagnostics/GPU_MEMORY.md) · [Process diagnostics guide](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.0/docs/diagnostics/README.md)
 
-[Changes since 1.6.3](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.6.3...v1.7.0)
+[Changes since 1.7.0](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.7.0...v1.8.0)

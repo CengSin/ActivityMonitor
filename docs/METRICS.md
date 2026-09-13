@@ -40,15 +40,11 @@ GPU memory is driver-reported system memory in use / allocated, where available.
 
 The process **GPU** diagnostics page charts the aggregate in-use and allocated device
 totals and lists each currently visible device. The aggregate is shown only when every
-visible device supplied the counter; a partial sum is reported as unavailable. Public
-Metal and IOKit APIs expose these device totals but do not expose a reliable allocation
-total attributable to one process. The process row therefore remains explicitly
-unavailable while per-process GPU execution time continues to use the driver client
-counters described below.
+visible device supplied the counter; a partial sum is reported as unavailable. A separate process graphics view uses the four graphics ledgers in `TASK_VM_INFO` revision 3. Charged uncompressed bytes also appear as **Graphics charged** in the process table. These accounting balances are distinct from device totals and from a complete Metal allocation inventory. [Definitions and API validation](diagnostics/GPU_MEMORY.md).
 
 Per-process data comes from accelerator clients' `IOUserClientCreator` PID and either direct `accumulatedGPUTime` counters (Intel) or `AppUsage[].accumulatedGPUTime` arrays. A direct total takes precedence to avoid double counting. The counter is interpreted as nanoseconds; this conversion was checked against Apple's GPU Time display on an M3 Pro. Process GPU percentage is the sum of valid counter deltas, divided by monotonic elapsed time and multiplied by 100. It is driver-reported GPU time, not a command buffer's elapsed duration or a share of the device graph. Overlapping work can produce rates above 100%.
 
-**GPU time is observed during this session**, not lifetime time: initial client samples, resets, changed counter arrays and new clients establish baselines. They do not add old work. Work from clients that appear and disappear entirely between samples cannot be recovered. Partially readable processes include only valid sampled clients. PID/start-time identities prevent attributing exited processes' work to reused PIDs. When a client disappears, its observed time remains while the process lives, but its current rate becomes unavailable.
+**GPU time is observed during this session**, not lifetime time: initial client samples, resets, changed counter arrays, observation gaps over 30 seconds and new clients establish baselines. They do not add old work. Work from clients that appear and disappear entirely between samples cannot be recovered. Partially readable processes include only valid sampled clients. PID/start-time identities prevent attributing exited processes' work to reused PIDs. When a client disappears, its observed time remains while the process lives, but its current rate becomes unavailable.
 
 The first process sample shows “Waiting for a second GPU sample.” Missing or malformed counters display **—**, while measured zero displays **0.0**. Missing device samples and long observation gaps split history lines. A disconnected selected device retains its name and history with unavailable current values. Histories retain fifteen minutes; collection pauses with the rest of the app.
 

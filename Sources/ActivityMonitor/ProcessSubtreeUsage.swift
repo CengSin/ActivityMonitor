@@ -4,7 +4,7 @@ import Foundation
 enum ProcessUsageMetric: String, CaseIterable {
   case cpu, time, gpu, gpuTime, threads, memory, resident, read, written
   case received, sent, packetsIn, packetsOut, ports
-  case privateMemory, sharedMemory, purgeable, compressed, wakeups
+  case privateMemory, sharedMemory, purgeable, compressed, wakeups, graphicsMemory
 
   /// Stable dense offsets keep counter access free of hashing in the aggregation pass.
   var index: Int {
@@ -28,6 +28,7 @@ enum ProcessUsageMetric: String, CaseIterable {
     case .purgeable: return 16
     case .compressed: return 17
     case .wakeups: return 18
+    case .graphicsMemory: return 19
     }
   }
 
@@ -47,6 +48,8 @@ enum ProcessUsageMetric: String, CaseIterable {
     case .memory:
       return
         "Sum of reported process memory footprints, with resident fallback where footprint is unavailable. Shared mappings can overlap; this is not unique physical RAM."
+    case .graphicsMemory:
+      return "Sum of uncompressed graphics-tagged memory charged to process footprints. Shared surfaces can overlap; this is not dedicated VRAM or a complete Metal allocation total."
     case .resident, .privateMemory, .sharedMemory, .purgeable, .compressed:
       return
         "Sum of this process memory counter. Shared mappings can overlap between processes; this is not unique physical RAM."

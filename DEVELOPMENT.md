@@ -40,9 +40,9 @@ See [QA.md](QA.md) for verification and its limits.
 
 ## Continuous integration and releases
 
-GitHub Actions builds and runs the test suite on the latest macOS Apple silicon runner and macOS 26 Intel. After both pass, CI builds and verifies the universal app, DMG and ZIP, and retains the complete installer artifacts for 30 days. Pull requests, pushes to main and manual CI runs use the same reusable build workflow.
+GitHub Actions builds and runs the test suite on the latest macOS Apple silicon runner. Native Intel tests can be enabled through manual CI dispatch. After tests and performance gates pass, CI builds and verifies the universal app, DMG and ZIP, and retains the complete installer artifacts for 30 days. Pull requests, pushes to main and manual CI runs use the same reusable build workflow.
 
-To release, first wait for green CI on the intended commit, then push a version tag such as `v1.0.1`. The release workflow validates the tag, repeats both architecture tests, builds versioned installers, verifies their contents and signatures, and publishes a GitHub release only after all checks succeed. It attaches the DMG, ZIP containing the full app bundle, portable SHA-256 checksums and installation notes. Failed builds do not publish a release.
+To release, first wait for green CI on the intended commit, then push a version tag such as `v1.0.1`. The release workflow validates the tag, repeats the Apple silicon tests and performance gates, builds versioned universal installers, verifies their contents and signatures, and publishes a GitHub release only after all checks succeed. It attaches the DMG, ZIP containing the full app bundle, portable SHA-256 checksums and installation notes. Failed builds do not publish a release.
 
 Pull-request builds use ad-hoc signing without Apple credentials. Tagged releases can use the protected `apple-signing` environment for Developer ID signing and notarization; see [Apple signing setup](docs/APPLE_SIGNING.md). Once enabled, signing, notarization or Gatekeeper failures prevent publication. The publishing job uses only its scoped GitHub token.
 

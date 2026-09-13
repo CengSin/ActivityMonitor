@@ -56,6 +56,7 @@ struct ProcessRow: Identifiable, Codable, Equatable {
   var gpuTime: Double? = nil
   var details = ProcessDetails()
   var executableName: String? = nil
+  var gpuDevices: [GPUProcessDeviceSample]? = nil
   var gpuWaiting = false
   // Optional for compatibility with older saved snapshots and supplied process rows.
   var cpuSampleAvailable: Bool? = nil
@@ -156,6 +157,7 @@ final class Collector: @unchecked Sendable {
         gpuTime: gpuProcesses[p.pid]?.seconds, gpuWaiting: gpuProcesses[p.pid]?.waiting ?? false)
       row.executableName = name
       row.cpuSampleAvailable = cpu != nil
+      row.gpuDevices = gpuProcesses[p.pid]?.devices
       row.memoryUsesResidentFallback = p.ioAccessible == 0 && p.accessible != 0
       row.details = detailsByPID[p.pid] ?? ProcessDetails()
       row.details.packetsIn = networkCounters?.packetsIn

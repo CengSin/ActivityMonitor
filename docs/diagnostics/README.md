@@ -29,13 +29,26 @@ bytes and purgeable bytes. Footprint is the primary process-memory comparison an
 from `proc_pid_rusage`; the other series are native diagnostic counters that can overlap
 or be unavailable when macOS denies task or region inspection. The chart splits lines at unavailable readings and gaps longer than ten seconds. Private/shared region reads refresh independently; lightweight updates do not erase the last region reading. Hover a reading for its capture time. A failed detailed read displays `—`, and peaks cover the selected range.
 
-The **GPU** page includes a fifteen-minute chart of driver-reported device memory in use
-and allocated, followed by one row per visible GPU. Device totals describe the graphics
-driver’s view of the machine and are not the selected process’s allocation. Public macOS
-APIs do not provide a reliable per-process GPU allocation total, so the process row is
-explicitly labelled unavailable; the GPU activity chart above remains per-process where
-the driver publishes execution counters. Disconnected devices remain visible until the
-session is closed, with their counters cleared.
+The **GPU** page includes process graphics memory history and a last-reading/peak list
+for charged, charged compressed, excluded and excluded compressed graphics ledgers.
+The capture time and access status are shown. The main GPU process table also offers
+**Graphics charged**, with sorting, tree subtotals and JSON export. These are graphics-tagged
+kernel balances, not a complete Metal resource or dedicated-VRAM inventory. A zero
+balance does not establish that a process uses no GPU memory. See [API research and
+validation](GPU_MEMORY.md) for definitions and limitations.
+
+**Process activity by GPU** lists each reporting device's execution rate, session-observed
+time, measured/current client counts and underlying counter count. Warmup, reset or
+unavailable clients are excluded from rates. Missing devices retain observed time with
+an unavailable current rate. This also works when ordinary CPU access is restricted.
+
+A separate device-memory chart and list show driver-reported in-use and allocated totals.
+They describe the machine, not the selected process. The complete process allocation row
+remains unavailable. Histories and per-device process activity are included in diagnostic
+JSON. Graphics history is bounded to fifteen minutes and 901 unique samples. The existing
+five-second background memory read supplies graphics ledgers; an open GPU diagnostics
+page can refresh them independently. Pausing stops live history, and manual detail refresh
+remains available. Missing reads split lines; they are never replaced with zero.
 
 **Memory map** offers two views: horizontal bars compare memory grouped by protection; **Address ranges** places the eight largest virtual mappings on a linear address axis. Each interval retains its true start, length and the gaps between mappings. Axis labels are offsets from the displayed base address. Small ranges may appear very thin beside large reservations; filter the table to inspect a smaller part of the address space.
 

@@ -4,7 +4,11 @@ typedef struct { int32_t pid, ppid, accessible, ioAccessible, translated; uint32
 typedef struct { uint64_t user, system, idle, physical, free, active, inactive, wired, compressed, swap, received, sent, packetsIn, packetsOut; int pressure, battery, charging, externalPower; } AMSystem;
 int am_processes(AMProcess *output, int capacity);
 void am_system(AMSystem *output);
-typedef struct { int vmAccessible; uint64_t purgeable, compressed; } AMMemoryDetails;
+typedef struct {
+ int vmAccessible, vmError, graphicsAccessible;
+ uint64_t purgeable, compressed;
+ int64_t graphicsFootprint, graphicsFootprintCompressed, graphicsNoFootprint, graphicsNoFootprintCompressed;
+} AMMemoryDetails;
 void am_memory_details(int32_t pid, AMMemoryDetails *output);
 #include "ProcessDiagnostics.h"
 

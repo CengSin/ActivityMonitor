@@ -47,6 +47,7 @@ enum ProcessValues {
     case .written: return p.ioAccessible ? .integer(p.written) : nil
     case .gpu: return p.gpuPercent.map(ProcessSortValue.number)
     case .gpuTime: return p.gpuTime.map(ProcessSortValue.number)
+    case .graphicsMemory: return p.details.graphics?.footprint.map(ProcessSortValue.integer)
     case .received: return p.networkReceived.map(ProcessSortValue.integer)
     case .sent: return p.networkSent.map(ProcessSortValue.integer)
     case .packetsIn: return p.details.packetsIn.map(ProcessSortValue.integer)
@@ -78,7 +79,7 @@ enum ProcessValues {
     case .text(let text): return text
     case .integer(let count):
       if [
-        "memory", "resident", "privateMemory", "sharedMemory", "purgeable", "compressed",
+        "graphicsMemory", "memory", "resident", "privateMemory", "sharedMemory", "purgeable", "compressed",
         "received", "sent", "read", "written",
       ].contains(key) {
         return bytes(count)

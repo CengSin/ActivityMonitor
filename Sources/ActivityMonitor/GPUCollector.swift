@@ -29,10 +29,19 @@ struct GPUHardwareSnapshot {
   var clients: [GPUClientSample]
   var uptime: TimeInterval
 }
+struct GPUProcessDeviceSample: Codable, Equatable, Identifiable {
+  var id: UInt64
+  var percent: Double?
+  var seconds: Double?
+  var clientCount = 0
+  var sampledClientCount = 0
+  var counterCount = 0
+}
 struct GPUProcessSample: Equatable {
   var percent: Double?
   var seconds: Double?
   var waiting = false
+  var devices: [GPUProcessDeviceSample] = []
 }
 struct GPUHistoryPoint: Identifiable, Codable {
   var id = UUID()
@@ -192,39 +201,58 @@ struct GPUProcessTracker {
   }
   private var previous: [GPUClientKey: Baseline] = [:]
   private var previousTime: TimeInterval?
-  private var observed: [Int32: (start: UInt64, seconds: Double)] = [:]
-  mutating func update(_ snapshot: GPUHardwareSnapshot, identities: [Int32: UInt64]) -> [Int32:
-    GPUProcessSample]
-  {
+  private struct DeviceKey: Hashable {
+    var pid: Int32
+    var device: UInt64
+  }
+  private var observed: [DeviceKey: (start: UInt64, seconds: Double)] = [:]
+  mutating func update(_ snapshot: GPUHardwareSnapshot, identities: [Int32: UInt64]) -> [Int32: GPUProcessSample] {
     let elapsed = previousTime.map { snapshot.uptime - $0 }
     var next: [GPUClientKey: Baseline] = [:]
-    var deltas: [Int32: Double] = [:]
-    var present: Set<Int32> = []
-    observed = observed.filter { identities[$0.key] == $0.value.start }
+    var deltas: [DeviceKey: Double] = [:]
+    var devices: [DeviceKey: GPUProcessDeviceSample] = [:]
+    observed = observed.filter { identities[$0.key.pid] == $0.value.start }
+    for (key, value) in observed {
+      devices[key] = .init(id: key.device, seconds: value.seconds)
+    }
     for client in snapshot.clients {
       guard let start = identities[client.pid], next[client.key] == nil else { continue }
-      present.insert(client.pid)
+      let key = DeviceKey(pid: client.pid, device: client.key.device)
+      var device = devices[key] ?? .init(id: key.device)
+      device.clientCount += 1
+      device.counterCount += client.counterCount
       next[client.key] = Baseline(sample: client, start: start)
-      if let elapsed, elapsed.isFinite, elapsed > 0,
+      if let elapsed, elapsed.isFinite, elapsed > 0, elapsed <= 30,
         let old = previous[client.key], old.start == start, old.sample.pid == client.pid,
         old.sample.counterCount == client.counterCount,
         client.nanoseconds >= old.sample.nanoseconds,
         old.sample.counters.count == client.counters.count,
         zip(old.sample.counters, client.counters).allSatisfy({ $1 >= $0 })
       {
-        deltas[client.pid, default: 0] += Double(client.nanoseconds - old.sample.nanoseconds) / 1e9
+        deltas[key, default: 0] += Double(client.nanoseconds - old.sample.nanoseconds) / 1e9
+        device.sampledClientCount += 1
       }
+      devices[key] = device
+    }
+    for (key, delta) in deltas {
+      let seconds = (observed[key]?.seconds ?? 0) + delta
+      observed[key] = (identities[key.pid]!, seconds)
+      devices[key]?.percent = delta / elapsed! * 100
+      devices[key]?.seconds = seconds
     }
     var result: [Int32: GPUProcessSample] = [:]
-    for (pid, value) in observed { result[pid] = GPUProcessSample(seconds: value.seconds) }
-    for pid in present {
-      if let delta = deltas[pid], let elapsed {
-        let seconds = (observed[pid]?.seconds ?? 0) + delta
-        observed[pid] = (identities[pid]!, seconds)
-        result[pid] = GPUProcessSample(percent: delta / elapsed * 100, seconds: seconds)
-      } else {
-        result[pid] = GPUProcessSample(seconds: observed[pid]?.seconds, waiting: true)
-      }
+    for (key, device) in devices {
+      result[key.pid, default: GPUProcessSample()].devices.append(device)
+    }
+    for pid in Array(result.keys) {
+      var value = result[pid]!
+      value.devices.sort { $0.id < $1.id }
+      let rates = value.devices.compactMap(\.percent)
+      let times = value.devices.compactMap(\.seconds)
+      value.percent = rates.isEmpty ? nil : rates.reduce(0, +)
+      value.seconds = times.isEmpty ? nil : times.reduce(0, +)
+      value.waiting = rates.isEmpty && value.devices.contains { $0.clientCount > 0 }
+      result[pid] = value
     }
     previous = next
     previousTime = snapshot.uptime

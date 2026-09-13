@@ -85,7 +85,7 @@ struct ProcessTreeSnapshot {
       usageByID[row.id] = ProcessSubtreeUsage(row)
       if let parent = parents[row.id] { remainingChildren[parent, default: 0] += 1 }
     }
-    var ready = rows.filter { remainingChildren[$0.id] == nil }.map(\.id)
+    var ready = rows.compactMap { remainingChildren[$0.id] == nil ? $0.id : nil }
     while let id = ready.popLast() {
       guard let parent = parents[id], let usage = usageByID[id] else { continue }
       usageByID[parent]?.add(usage)
@@ -99,20 +99,23 @@ struct ProcessTreeSnapshot {
       var cursor: Int32? = id
       while let next = cursor, included.insert(next).inserted { cursor = parents[next] }
     }
-    let includedRows = rows.filter { included.contains($0.id) }
+    let includedRows = included.count == rows.count ? rows : rows.filter { included.contains($0.id) }
     let orderedRows = ordering?.apply(includedRows, usage: usageByID) ?? includedRows
     entries.reserveCapacity(includedRows.count)
-    var children: [Int32: [ProcessRow]] = [:]
-    var roots: [ProcessRow] = []
-    for row in orderedRows {
+    // Keep traversal queues lightweight: copying a complete process row also
+    // retains its detailed memory and per-device GPU snapshots.
+    var children: [Int32: [Int]] = [:]
+    var roots: [Int] = []
+    for (index, row) in orderedRows.enumerated() {
       if let parent = parents[row.id] {
-        children[parent, default: []].append(row)
+        children[parent, default: []].append(index)
       } else {
-        roots.append(row)
+        roots.append(index)
       }
     }
     var pending = roots.reversed().map { ($0, 0) }
-    while let (row, depth) = pending.popLast() {
+    while let (index, depth) = pending.popLast() {
+      let row = orderedRows[index]
       let descendants = children[row.id] ?? []
       entries.append(
         ProcessTreeEntry(
@@ -126,10 +129,10 @@ struct ProcessTreeSnapshot {
   static func build(
     _ rows: [ProcessRow], query: ProcessQuery, matches: [ProcessRow]? = nil
   ) -> Self {
-    let matching = matches ?? rows.filter(query.matches)
     let filtered =
       !query.query.isEmpty
       || !["All processes", "All processes, hierarchically"].contains(query.filter)
+    let matching = matches ?? (filtered ? rows.filter(query.matches) : rows)
     var ordering = query
     ordering.query = ""
     ordering.filter = "All processes"

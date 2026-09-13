@@ -74,6 +74,14 @@ import XCTest
       row.details.sharedMemory = row.memory / 8
       row.details.compressed = row.memory / 12
       row.details.purgeable = row.memory / 20
+      var graphics = AMMemoryDetails()
+      graphics.graphicsAccessible = 1
+      graphics.graphicsFootprint = Int64(40_000_000 + index * 100_000)
+      graphics.graphicsFootprintCompressed = 1_000_000
+      graphics.graphicsNoFootprint = 2_000_000
+      row.details.graphics = .init(graphics, date: end.addingTimeInterval(Double(index - 60)))
+      row.gpuDevices = [.init(id: 1, percent: row.gpuPercent, seconds: 1.5,
+        clientCount: 3, sampledClientCount: 2, counterCount: 4)]
       session.accept(
         rows: [row], date: end.addingTimeInterval(Double(index - 60)),
         gpuDevices: [

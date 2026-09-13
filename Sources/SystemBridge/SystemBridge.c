@@ -78,10 +78,19 @@ void am_system(AMSystem *o) {
 void am_memory_details(int32_t pid, AMMemoryDetails *out) {
  memset(out, 0, sizeof(*out));
  mach_port_t task = MACH_PORT_NULL;
- if (task_name_for_pid(mach_task_self(), pid, &task) != KERN_SUCCESS) return;
+ out->vmError = task_name_for_pid(mach_task_self(), pid, &task);
+ if (out->vmError != KERN_SUCCESS) return;
  task_vm_info_data_t vm = {0}; mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
- if (task_info(task, TASK_VM_INFO, (task_info_t)&vm, &count) == KERN_SUCCESS && count >= TASK_VM_INFO_REV0_COUNT) {
+ out->vmError = task_info(task, TASK_VM_INFO, (task_info_t)&vm, &count);
+ if (out->vmError == KERN_SUCCESS && count >= TASK_VM_INFO_REV0_COUNT) {
   out->vmAccessible = 1; out->purgeable = vm.purgeable_volatile_resident; out->compressed = vm.compressed;
+ }
+ if (out->vmError == KERN_SUCCESS && count >= TASK_VM_INFO_REV3_COUNT) {
+  out->graphicsAccessible = 1;
+  out->graphicsFootprint = vm.ledger_tag_graphics_footprint;
+  out->graphicsFootprintCompressed = vm.ledger_tag_graphics_footprint_compressed;
+  out->graphicsNoFootprint = vm.ledger_tag_graphics_nofootprint;
+  out->graphicsNoFootprintCompressed = vm.ledger_tag_graphics_nofootprint_compressed;
  }
  mach_port_deallocate(mach_task_self(), task);
 }
