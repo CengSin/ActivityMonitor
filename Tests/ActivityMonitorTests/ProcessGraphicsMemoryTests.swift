@@ -4,6 +4,35 @@ import SystemBridge
 @testable import ActivityMonitor
 
 final class ProcessGraphicsMemoryTests: XCTestCase {
+  func testSharedSnapshotsKeepIndependentReadingsAndJSONSchema() throws {
+    var memory = AMMemoryDetails()
+    memory.graphicsAccessible = 1
+    memory.graphicsFootprint = 64
+    let date = Date(timeIntervalSince1970: 1_700_000_000)
+    let original = ProcessGraphicsMemorySample(memory, date: date)
+    var details = ProcessDetails()
+    details.graphics = original
+    let retained = details
+    memory.graphicsFootprint = 128
+    details.graphics = .init(memory, date: date.addingTimeInterval(5))
+    XCTAssertTrue(retained.graphics === original)
+    XCTAssertEqual(retained.graphics?.footprint, 64)
+    XCTAssertEqual(details.graphics?.footprint, 128)
+    XCTAssertNotEqual(details.graphics, original)
+
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let data = try encoder.encode(original)
+    let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    XCTAssertEqual(Set(object.keys), ["date", "footprint", "footprintCompressed", "excluded", "excludedCompressed", "status"])
+    XCTAssertEqual(object["footprint"] as? Int, 64)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let decoded = try decoder.decode(ProcessGraphicsMemorySample.self, from: data)
+    XCTAssertFalse(decoded === original)
+    XCTAssertEqual(decoded, original)
+  }
+
   func testNativeGraphicsReadAndDeniedAccess() throws {
     var memory = AMMemoryDetails()
     am_memory_details(getpid(), &memory)

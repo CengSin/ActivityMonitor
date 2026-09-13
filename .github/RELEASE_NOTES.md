@@ -1,4 +1,4 @@
-Activity Monitor 1.8.0 adds per-process graphics memory accounting, more GPU activity details, and compact diagnostic help.
+Activity Monitor 1.8.1 adds per-process graphics memory accounting, more GPU activity details, and compact diagnostic help.
 
 ### New
 
@@ -9,7 +9,9 @@ Activity Monitor 1.8.0 adds per-process graphics memory accounting, more GPU act
 
 ### Improved
 
-- Process-tree construction avoids copying full process records into traversal queues and skips redundant filtering of complete snapshots.
+- Share immutable graphics-memory snapshots across process rows and histories to reduce copying during sorting and tree aggregation.
+
+- Process-tree construction uses compact temporary graph state, avoids copying full records into traversal queues, and skips redundant filtering of complete snapshots.
 
 - Diagnostic explanations and subtitles now use compact info buttons. Hover for a tooltip or click to keep the full explanation open; access errors and missing-data states remain visible.
 - GPU tracking preserves missing/reset/warmup states, deduplicates reporting clients, and rebaselines after long observation gaps.
@@ -21,6 +23,6 @@ Graphics ledgers are kernel accounting, not a complete Metal allocation inventor
 
 Download the universal DMG or app ZIP for Apple silicon and Intel on macOS 14 or later. Drag Activity Monitor to Applications. SHA256SUMS verifies the downloads.
 
-[GPU memory API investigation](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.0/docs/diagnostics/GPU_MEMORY.md) · [Process diagnostics guide](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.0/docs/diagnostics/README.md)
+[GPU memory API investigation](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.1/docs/diagnostics/GPU_MEMORY.md) · [Process diagnostics guide](https://github.com/wieslawsoltes/ActivityMonitor/blob/v1.8.1/docs/diagnostics/README.md)
 
-[Changes since 1.7.0](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.7.0...v1.8.0)
+[Changes since 1.7.0](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.7.0...v1.8.1)

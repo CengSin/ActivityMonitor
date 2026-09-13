@@ -1,15 +1,23 @@
 import Foundation
 import SystemBridge
 
-/// Kernel graphics-tag accounting for one process, not a complete Metal/VRAM inventory.
-struct ProcessGraphicsMemorySample: Codable, Equatable, Identifiable {
+/// Immutable kernel graphics accounting shared by process rows and bounded history.
+/// A reference keeps the timestamp and payload out of every copied process record.
+/// These ledgers are not a complete Metal/VRAM inventory.
+final class ProcessGraphicsMemorySample: Codable, Equatable, Identifiable {
   var id: Date { date }
-  var date: Date
-  var footprint: UInt64?
-  var footprintCompressed: UInt64?
-  var excluded: UInt64?
-  var excludedCompressed: UInt64?
-  var status: String
+  let date: Date
+  let footprint: UInt64?
+  let footprintCompressed: UInt64?
+  let excluded: UInt64?
+  let excludedCompressed: UInt64?
+  let status: String
+
+  static func == (lhs: ProcessGraphicsMemorySample, rhs: ProcessGraphicsMemorySample) -> Bool {
+    lhs === rhs || (lhs.date == rhs.date && lhs.footprint == rhs.footprint
+      && lhs.footprintCompressed == rhs.footprintCompressed && lhs.excluded == rhs.excluded
+      && lhs.excludedCompressed == rhs.excludedCompressed && lhs.status == rhs.status)
+  }
 
   init(_ details: AMMemoryDetails, date: Date) {
     self.date = date
