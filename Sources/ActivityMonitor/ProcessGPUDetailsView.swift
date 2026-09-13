@@ -87,12 +87,12 @@ struct ProcessGPUDetailsView: View {
               Spacer()
               Text(device.percent.map { gpuPercent($0) + "%" } ?? "—").monospacedDigit()
             }
-            Text("Observed time: \(gpuDuration(device.seconds)) · Measured clients: \(device.sampledClientCount)/\(device.clientCount) · Counters: \(device.counterCount)")
+            Text("Observed time: \(gpuDuration(device.seconds)) · Measured/reporting clients: \(device.sampledClientCount)/\(device.clientCount) · Counters: \(device.counterCount)")
               .font(.system(size: 10)).foregroundStyle(theme.secondary)
               .fixedSize(horizontal: false, vertical: true)
           }
         }
-        Text("Rates include only clients with valid consecutive samples. New or reset clients need a baseline; vanished clients retain observed time but have no current rate. Driver coverage may be partial. Overlapping work can exceed 100%.")
+        Text("Rates include only clients with valid consecutive samples. Reporting clients have published execution counters; other GPU connections are not counted. New or reset clients need a baseline; vanished clients retain observed time but have no current rate. Driver coverage may be partial. Overlapping work can exceed 100%.")
           .font(.system(size: 10)).foregroundStyle(theme.tertiary)
           .fixedSize(horizontal: false, vertical: true)
       }

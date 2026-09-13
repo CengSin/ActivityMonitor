@@ -74,5 +74,6 @@ Device rates share the existing monotonic counter tracker. Duplicate clients are
 PID reuse, counter rollback, changed queue counters and long gaps rebaseline. A device's
 observed time survives vanished clients until the process exits; current rate and client
 coverage reflect only this sample. Rates include only valid consecutive client pairs,
-so partial coverage is shown as measured/current clients rather than silently claiming
-full process coverage. The aggregate remains the sum of valid reporting-device rates.
+so partial coverage is shown as measured/reporting clients. Reporting clients have
+published execution counters; other GPU connections are not counted. The aggregate
+remains the sum of valid reporting-device rates.
