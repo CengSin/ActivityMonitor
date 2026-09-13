@@ -17,14 +17,15 @@ struct ProcessTableHarness: View {
   @State private var inspector = false
   @State private var sort = "primary"
   @State private var descending = true
-  @FocusState private var search: Bool
+  @State private var searchExpanded = false
+  @State private var search = false
   var body: some View {
     MonitorProcessTable(
       rows: rows, metric: metric, theme: .init(dark: dark), query: $query,
       filter: $filter, mode: $mode, tree: tree, sourceRows: rows,
       selection: $selection, selectedIDs: $selected, inspector: $inspector,
       sort: $sort, descending: $descending, inspect: { _ in }, stop: { _ in },
-      stopMany: { _ in }, searchFocus: $search)
+      stopMany: { _ in }, searchFocus: $search, searchExpanded: $searchExpanded)
   }
 }
 
@@ -48,27 +49,43 @@ struct UpdatingProcessTableHarness: View {
     try await Task.sleep(for: .milliseconds(25))
     view.layoutSubtreeIfNeeded()
   }
-  private func bitmap(_ host: NSView) throws -> NSBitmapImageRep {
-    let image = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+  private func bitmap(_ host: NSView, scale: CGFloat? = nil) throws -> NSBitmapImageRep {
+    let image: NSBitmapImageRep
+    if let scale {
+      image = try XCTUnwrap(
+        NSBitmapImageRep(
+          bitmapDataPlanes: nil,
+          pixelsWide: Int(host.bounds.width * scale), pixelsHigh: Int(host.bounds.height * scale),
+          bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+          colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
+      image.size = host.bounds.size
+    } else {
+      image = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+    }
     host.cacheDisplay(in: host.bounds, to: image)
     return image
   }
   private func rowHasInk(_ image: NSBitmapImageRep, width: CGFloat, dark: Bool) -> Bool {
     let scale = CGFloat(image.pixelsWide) / width
-    // Inside the first fully visible row, away from the toolbar, header and icons.
+    // Sample a complete row period below the header. At fractional scroll
+    // offsets, a shorter band can fall between text baselines. Sample every
+    // pixel: a sparse grid can miss thin, antialiased text on 1× displays.
     var ink = 0
-    let top = width >= 900 ? 110 : 125
-    for y in stride(from: top, to: top + 23, by: 2) {
-      for x in stride(from: 55, to: min(280, Int(width * 0.32)), by: 3) {
+    let top = 110
+    for y in top..<(top + 41) {
+      for x in 55..<min(280, Int(width * 0.32)) {
         guard
           let color = image.colorAt(x: Int(CGFloat(x) * scale), y: Int(CGFloat(y) * scale))?
             .usingColorSpace(.sRGB)
         else { continue }
         let brightness = (color.redComponent + color.greenComponent + color.blueComponent) / 3
-        if dark ? brightness > 0.65 : brightness < 0.4 { ink += 1 }
+        if dark ? brightness > 0.65 : brightness < 0.4 {
+          ink += 1
+          if ink > 12 { return true }
+        }
       }
     }
-    return ink > 12
+    return false
   }
   func testEveryListRendersRowsAtTopMiddleAndBottomInBothThemes() async throws {
     let suite = "ActivityMonitor.Headless.\(UUID())"
@@ -91,7 +108,8 @@ struct UpdatingProcessTableHarness: View {
           window.contentView = host
           defer { window.close() }
           try await settle(host)
-          _ = try bitmap(host)
+          // Exercise non-Retina rendering on Retina developer machines too.
+          _ = try bitmap(host, scale: 1)
           try await settle(host)
           let anchor = try XCTUnwrap(descendant(host, ProcessTableViewport.Anchor.self))
           let scroll = try XCTUnwrap(anchor.enclosingScrollView)
@@ -103,15 +121,51 @@ struct UpdatingProcessTableHarness: View {
             scroll.contentView.scroll(to: CGPoint(x: 0, y: y))
             scroll.reflectScrolledClipView(scroll.contentView)
             try await settle(host)
-            let image = try bitmap(host)
+            let image = try bitmap(host, scale: 1)
+            if !rowHasInk(image, width: width, dark: dark) {
+              let directory = URL(fileURLWithPath: ".build/ci-tests/renders")
+              try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+              let name = "\(metric)-\(Int(width))-\(dark)-\(fraction)"
+              try image.representation(using: .png, properties: [:])?
+                .write(to: directory.appendingPathComponent("\(name).png"))
+            }
             XCTAssertTrue(
               rowHasInk(image, width: width, dark: dark),
-              "Blank \(metric) \(dark) viewport at \(fraction)")
+              "Blank \(metric) \(dark) viewport at \(fraction), width \(width), clip \(scroll.contentView.bounds)"
+            )
             XCTAssertEqual(document.bounds.height, height, accuracy: 2)
             XCTAssertEqual(scroll.contentView.bounds.minY, y, accuracy: 2)
           }
         }
       }
+    }
+  }
+  func testSearchFitsInTheHeaderAtIntermediateWidths() async throws {
+    let suite = "ActivityMonitor.Headless.Search.\(UUID())"
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    for width: CGFloat in [620, 650, 720, 850, 900, 1200] {
+      let host = NSHostingView(
+        rootView:
+          ProcessTableHarness(rows: PerformanceFixture.rows(1000)).defaultAppStorage(defaults))
+      host.frame = CGRect(x: 0, y: 0, width: width, height: 600)
+      let window = NSWindow(
+        contentRect: host.frame, styleMask: .borderless,
+        backing: .buffered, defer: false)
+      window.isReleasedWhenClosed = false
+      window.contentView = host
+      defer {
+        window.contentView = nil
+        window.close()
+      }
+      try await settle(host)
+      let search = try XCTUnwrap(descendant(host, NSSearchField.self))
+      let frame = host.convert(search.bounds, from: search)
+      XCTAssertGreaterThanOrEqual(frame.width, 140)
+      XCTAssertGreaterThanOrEqual(frame.minX, 0)
+      XCTAssertLessThanOrEqual(frame.maxX, width)
+      XCTAssertLessThanOrEqual(frame.maxY, 61)
     }
   }
   func testFilteringAtBottomThroughEmptyResultsRendersAgain() async throws {
@@ -177,7 +231,7 @@ struct UpdatingProcessTableHarness: View {
       let reference = try bitmap(host)
       let scale = CGFloat(reference.pixelsWide) / 420
       let expected = try XCTUnwrap(
-        reference.colorAt(x: Int(20 * scale), y: Int(80 * scale))?.usingColorSpace(.sRGB))
+        reference.colorAt(x: Int(20 * scale), y: Int(65 * scale))?.usingColorSpace(.sRGB))
       scroll.contentView.scroll(
         to: CGPoint(x: document.bounds.width - scroll.contentView.bounds.width, y: 4007))
       scroll.reflectScrolledClipView(scroll.contentView)
@@ -186,7 +240,7 @@ struct UpdatingProcessTableHarness: View {
 
       for x in stride(from: 20, through: 380, by: 20) {
         let color = try XCTUnwrap(
-          image.colorAt(x: Int(CGFloat(x) * scale), y: Int(80 * scale))?.usingColorSpace(.sRGB))
+          image.colorAt(x: Int(CGFloat(x) * scale), y: Int(65 * scale))?.usingColorSpace(.sRGB))
         XCTAssertEqual(color.redComponent, expected.redComponent, accuracy: 0.02)
         XCTAssertEqual(color.greenComponent, expected.greenComponent, accuracy: 0.02)
         XCTAssertEqual(color.blueComponent, expected.blueComponent, accuracy: 0.02)
