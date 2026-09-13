@@ -64,6 +64,15 @@ The ZIP itself cannot be stapled; the app inside it carries the ticket. Notariza
 
 ## Validation status
 
+The `wieslawsoltes/ActivityMonitor` environment was configured on 2026-09-13 with
+only `v*` tags admitted, `wieslawsoltes` as required reviewer, and administrator
+bypass disabled. Self-review remains allowed for the single-maintainer workflow;
+this is manual approval, not independent two-person review. Add another trusted
+reviewer and prevent self-review if that separation is required. Environment
+secrets are still empty and `APPLE_SIGNING_ENABLED` remains unset. Upload the six
+credentials above directly through GitHub before enabling signing; no Apple
+credentials were read, exported or submitted during environment setup.
+
 The ad-hoc path can be exercised without an Apple account. Script tests check accepted, rejected, timed-out and malformed notarization responses, and missing configuration. They do not establish that a real certificate or Apple account works. The first signed release still requires a successful live Apple submission and Gatekeeper verification with your credentials.
 
 References: [GitHub environment protections](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments), [GitHub secure workflow guidance](https://docs.github.com/en/actions/reference/security/secure-use), [Apple Developer ID](https://developer.apple.com/developer-id/), [Apple notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow), [GitHub certificate setup](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications).

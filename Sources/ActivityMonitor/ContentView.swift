@@ -282,7 +282,7 @@ struct ContentView: View {
     ToolbarItem(placement: .principal) {
       MetricSwitcher(
         metric: Binding(get: { metric }, set: selectMetric), theme: theme,
-        compact: layout.width < 860, controlHeight: 28
+        compact: layout.width < 860, controlHeight: 28, inNativeToolbar: true
       )
       .frame(width: layout.width < 860 ? 210 : nil)
       .fixedSize(horizontal: true, vertical: true)
