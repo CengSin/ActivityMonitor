@@ -51,7 +51,7 @@ Push a new version tag after merging and verifying the release changes. Existing
 
 The workflow:
 
-1. Runs Apple silicon and Intel tests and the standard package checks.
+1. Runs Apple silicon tests and standard universal package checks. Native Intel tests are available through manual CI dispatch.
 2. Enters the protected environment on a fresh macOS runner, verifies the tagged commit belongs to main, and downloads/verifies the already-tested app. Project compilation runs before credential access.
 3. Imports the certificate into a temporary keychain and validates the notarization credentials.
 4. Signs the universal app with hardened runtime and a secure timestamp.
@@ -68,10 +68,10 @@ The `wieslawsoltes/ActivityMonitor` environment was configured on 2026-09-13 wit
 only `v*` tags admitted, `wieslawsoltes` as required reviewer, and administrator
 bypass disabled. Self-review remains allowed for the single-maintainer workflow;
 this is manual approval, not independent two-person review. Add another trusted
-reviewer and prevent self-review if that separation is required. Environment
-secrets are still empty and `APPLE_SIGNING_ENABLED` remains unset. Upload the six
-credentials above directly through GitHub before enabling signing; no Apple
-credentials were read, exported or submitted during environment setup.
+reviewer and prevent self-review if that separation is required. The protection setup does not provision Apple credentials. Upload all six
+credentials above directly through GitHub before setting the repository variable
+`APPLE_SIGNING_ENABLED` to `true`. Check the environment secret names and variable
+in GitHub for their current configuration; never display secret values.
 
 The ad-hoc path can be exercised without an Apple account. Script tests check accepted, rejected, timed-out and malformed notarization responses, and missing configuration. They do not establish that a real certificate or Apple account works. The first signed release still requires a successful live Apple submission and Gatekeeper verification with your credentials.
 

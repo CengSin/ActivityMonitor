@@ -240,6 +240,7 @@ struct ContentView: View {
       ?? AnyLayout(VStackLayout(spacing: 0))
     container {
       overviewControls(layout)
+        .padding(.top, 8)
       MonitorOverview(
         metric: metric, range: range, theme: theme,
         width: layout.width - layout.gutter * 2, expanded: layout.expanded,
