@@ -24,11 +24,16 @@ security set-keychain-settings -lut 7200 "$KEYCHAIN_PATH"
 security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 security import "$CERTIFICATE_PATH" -P "$DEVELOPER_ID_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security -f pkcs12 -k "$KEYCHAIN_PATH"
 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
+# codesign must be able to discover the temporary keychain and its identity.
+# This job runs on a disposable GitHub-hosted runner; cleanup deletes the keychain.
+security list-keychains -d user -s "$KEYCHAIN_PATH"
+SIGNING_CERT_SHA1="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | python3 scripts/resolve-signing-identity.py)"
 xcrun notarytool store-credentials activity-monitor-ci --keychain "$KEYCHAIN_PATH" \
   --key "$API_KEY_PATH" --key-id "$APP_STORE_CONNECT_KEY_ID" --issuer "$APP_STORE_CONNECT_ISSUER_ID"
 rm -f "$CERTIFICATE_PATH" "$API_KEY_PATH"
 {
   echo "SIGNING_IDENTITY=$DEVELOPER_ID_IDENTITY"
+  echo "SIGNING_CERT_SHA1=$SIGNING_CERT_SHA1"
   echo "SIGNING_KEYCHAIN=$KEYCHAIN_PATH"
   echo 'NOTARY_PROFILE=activity-monitor-ci'
   echo "NOTARY_KEYCHAIN=$KEYCHAIN_PATH"

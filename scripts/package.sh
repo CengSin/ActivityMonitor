@@ -57,9 +57,9 @@ if [[ -n "${SIGNING_IDENTITY:-}" ]]; then
  # Sign embedded code inside out with the same Developer ID as the host.
  SPARKLE="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
  for COMPONENT in "$SPARKLE/Autoupdate" "$SPARKLE/Updater.app" "$SPARKLE"/XPCServices/*.xpc "$APP/Contents/Frameworks/Sparkle.framework"; do
-  codesign --options runtime --preserve-metadata=entitlements "${SIGNING_ARGS[@]}" --sign "$SIGNING_IDENTITY" "$COMPONENT"
+  codesign --options runtime --preserve-metadata=entitlements "${SIGNING_ARGS[@]}" --sign "${SIGNING_CERT_SHA1:-$SIGNING_IDENTITY}" "$COMPONENT"
  done
- codesign --options runtime "${SIGNING_ARGS[@]}" --sign "$SIGNING_IDENTITY" "$APP"
+ codesign --options runtime "${SIGNING_ARGS[@]}" --sign "${SIGNING_CERT_SHA1:-$SIGNING_IDENTITY}" "$APP"
 else
  codesign --force --sign - "$APP"
 fi
@@ -88,7 +88,7 @@ cp dist/INSTALL.md "$STAGE/Read Me.txt"
 hdiutil create -volname "Activity Monitor" -srcfolder "$STAGE" -ov -format UDZO "dist/ActivityMonitor-$VERSION-universal.dmg"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "dist/ActivityMonitor-$VERSION-universal.zip"
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
- codesign "${SIGNING_ARGS[@]}" --sign "$SIGNING_IDENTITY" "dist/ActivityMonitor-$VERSION-universal.dmg"
+ codesign "${SIGNING_ARGS[@]}" --sign "${SIGNING_CERT_SHA1:-$SIGNING_IDENTITY}" "dist/ActivityMonitor-$VERSION-universal.dmg"
  ./scripts/notarize.sh "dist/ActivityMonitor-$VERSION-universal.dmg"
  xcrun stapler staple "dist/ActivityMonitor-$VERSION-universal.dmg"
  xcrun stapler validate "dist/ActivityMonitor-$VERSION-universal.dmg"
