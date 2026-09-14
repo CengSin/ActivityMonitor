@@ -1,21 +1,22 @@
-Activity Monitor 1.9.0 adds native software updates and gives more window space to charts and processes.
+Activity Monitor 1.9.1 improves the title bar and makes process search fit smaller windows.
 
-### Software updates
+### Window and toolbar improvements
 
-- Use **Check for Updates…** from the application menu or More menu to download and install new versions with Sparkle's native interface.
-- Daily update checks are enabled by default. Opt into automatic downloads and installation, or disable background checks, from **Software Updates** in the application menu.
-- Update feeds and archives are signed with Ed25519. Downloads are verified before extraction, and release publishing verifies the archive against the public key included in the app.
+- Restored the familiar metric tab styling, with icons and labels when space permits and all six icons in narrow windows.
+- Improved width budgeting so tab labels and additional toolbar actions remain visible at smaller sizes.
+- Restored the top-right controls and grouped Light, Dark, and System appearance selector.
+- Matched the title bar to the window background in light and dark appearances and corrected tab alignment.
+- Clipped scrolling content below the title bar so charts and process rows cannot overlap window controls.
 
-### More room for monitoring
+### Process search
 
-- A compact, single-row overview header retains the GPU selector, history range, live/paused status, and help. Hover over the info button for a tooltip or click it to read the explanation.
-- All six metric tabs now stay in the native macOS title bar. Narrow windows use icons; wider windows include labels and additional actions.
-- Metric tabs use a single native glass outline on macOS Tahoe, removing the redundant border.
-- A small gap below the title bar separates metric tabs from the overview controls at every window size.
-- Native window controls support normal window dragging, zooming, and full screen. Keyboard shortcuts and distinct accessibility labels remain available.
+- Kept process controls in one row, with an inline native search field when space permits.
+- Added an expandable search button for narrow windows. Active searches stay visible when resizing.
+- Command-K focuses search; Escape clears the query and dismisses an empty compact search field.
+- Preserved the existing process-list and overview scrolling behavior.
 
 ### Install
 
-Download the universal DMG or ZIP for Apple silicon and Intel on macOS 14 or later. Install 1.9.0 once from the download to enable built-in updates; earlier releases do not include the updater. SHA256SUMS verifies the downloads.
+Use **Check for Updates…** in Activity Monitor 1.9.0, or download the universal DMG or ZIP for Apple silicon and Intel on macOS 14 or later. SHA256SUMS verifies the downloads. Update feeds and archives are signed with Ed25519.
 
-[Changes since 1.8.1](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.8.1...v1.9.0)
+[Changes since 1.9.0](https://github.com/wieslawsoltes/ActivityMonitor/compare/v1.9.0...v1.9.1)
